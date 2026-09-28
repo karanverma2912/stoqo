@@ -1,0 +1,74 @@
+import { test, expect } from "@playwright/test";
+test("owner onboards, updates stock and sees persisted ledger on mobile", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/signup");
+  await page.getByLabel("Your name").fill("Gourav");
+  await page
+    .getByLabel("Email address")
+    .fill(`owner-${Date.now()}@example.test`);
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill("stoqo-safe-test-password");
+  await page.getByRole("button", { name: "Create your account" }).click();
+  await page.getByLabel("Business name").fill("Everyday Store");
+  await page.getByRole("button", { name: "Create your workspace" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Hey, Gourav" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Add product", exact: true })
+    .last()
+    .click();
+  await page.getByLabel("Product name").fill("Everyday Tee");
+  await page.getByLabel("Selling price").fill("599");
+  await page.getByLabel("Opening stock").fill("10");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Add product" })
+    .click();
+  await expect(page.getByText("A new product on your shelves")).toBeVisible();
+  await page
+    .getByRole("link", { name: "Inventory", exact: true })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "Everyday Tee" }).click();
+  await expect(
+    page.getByRole("dialog").getByText("10 units", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Stock out" })
+    .click();
+  await page.getByLabel("Quantity", { exact: true }).fill("3");
+  await page.getByRole("button", { name: "Remove stock" }).click();
+  await expect(page.getByText("3 units removed. Stock updated.")).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Everyday Tee" }).click();
+  await expect(
+    page.getByRole("dialog").getByText("7 units", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByText("-3", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    page
+      .getByRole("navigation")
+      .getByRole("link", { name: "Inventory", exact: true })
+      .last(),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth,
+    ),
+  ).toBe(false);
+  await page.screenshot({
+    path: "test-results/inventory-mobile.png",
+    fullPage: true,
+  });
+  expect(errors).toEqual([]);
+});

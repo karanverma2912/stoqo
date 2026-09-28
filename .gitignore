@@ -11,3 +11,8 @@ backend/tmp/*
 backend/storage/*
 .DS_Store
 coverage/
+
+frontend/test-results/
+frontend/playwright-report/
+core
+core.*

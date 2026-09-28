@@ -20,7 +20,7 @@ jobs:
         image: postgres:17
         env: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: stoqo_test}
         ports: ['5432:5432']
-        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       RAILS_ENV: test
       TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/stoqo_test
@@ -32,3 +32,15 @@ jobs:
         with: {ruby-version: '3.4.5', bundler-cache: true, working-directory: backend}
       - run: bundle exec rails db:prepare
       - run: bundle exec rspec
+      - uses: actions/setup-node@v4
+        with: {node-version: '24', cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - run: npm ci && npm run build && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npx playwright test
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence
+          path: frontend/test-results/
+          retention-days: 7

@@ -34,7 +34,7 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
     .getByRole("link", { name: "Inventory", exact: true })
     .first()
     .click();
-  await page.getByRole("button", { name: "Everyday Tee" }).click();
+  await page.locator(".product-name").filter({ hasText: "Everyday Tee" }).click();
   await expect(
     page.getByRole("dialog").getByText("10 units", { exact: true }),
   ).toBeVisible();
@@ -46,7 +46,7 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
   await page.getByRole("button", { name: "Remove stock" }).click();
   await expect(page.getByText("3 units removed. Stock updated.")).toBeVisible();
   await page.reload();
-  await page.getByRole("button", { name: "Everyday Tee" }).click();
+  await page.locator(".product-name").filter({ hasText: "Everyday Tee" }).click();
   await expect(
     page.getByRole("dialog").getByText("7 units", { exact: true }),
   ).toBeVisible();

@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: stoqo_development
+    ports: ["5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    volumes: ["redis_data:/data"]
+  api:
+    build: ./backend
+    environment: &backend_env
+      RAILS_ENV: development
+      DATABASE_URL: postgres://postgres:postgres@db:5432/stoqo_development
+      REDIS_URL: redis://redis:6379/0
+      FRONTEND_ORIGINS: http://localhost:3000
+      ALLOWED_HOSTS: localhost,127.0.0.1,api
+    command: sh -c "bundle exec rails db:prepare && bundle exec rails db:seed && bundle exec puma -C config/puma.rb"
+    ports: ["3001:3001"]
+    volumes: ["storage_data:/app/storage"]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_started}
+  worker:
+    build: ./backend
+    environment: *backend_env
+    command: bundle exec sidekiq
+    volumes: ["storage_data:/app/storage"]
+    depends_on: [api, redis]
+volumes:
+  postgres_data:
+  redis_data:
+  storage_data:

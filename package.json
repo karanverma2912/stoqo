@@ -1,0 +1,1 @@
+{"name":"stoqo","private":true,"scripts":{"dev":"npm --prefix frontend run dev","build":"npm --prefix frontend run build","test:web":"npm --prefix frontend test"}}

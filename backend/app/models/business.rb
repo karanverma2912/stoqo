@@ -1,0 +1,16 @@
+class Business < ApplicationRecord
+  belongs_to :subscription_plan
+  has_many :business_memberships
+  has_many :products
+  has_many :categories
+  has_many :stock_movements
+  has_many :activities
+  has_many :notifications
+  has_many :imports
+  validates :name, presence: true, length: {maximum: 120}
+  validates :currency, format: {with: /\A[A-Z]{3}\z/}
+  validates :timezone, inclusion: {in: ActiveSupport::TimeZone.all.map(&:tzinfo).map(&:name)}
+  def writable?
+    subscription_status == "active" || (subscription_status == "trial" && trial_ends_at > Time.current)
+  end
+end

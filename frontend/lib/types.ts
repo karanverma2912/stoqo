@@ -1,0 +1,48 @@
+export type User = { id: number; name: string; email: string };
+export type Business = {
+  id: number;
+  name: string;
+  currency: string;
+  timezone: string;
+  role?: string;
+  trial_ends_at: string;
+};
+export type Product = {
+  id: number;
+  name: string;
+  description?: string;
+  sku?: string;
+  barcode?: string;
+  selling_price: string;
+  purchase_price: string;
+  current_stock: string;
+  low_stock_threshold: string;
+  unit: string;
+  stock_status: "healthy" | "low" | "out";
+  category_id?: number;
+  category_name?: string;
+  image_url?: string;
+};
+export type Movement = {
+  id: number;
+  product_name: string;
+  user_name: string;
+  quantity: string;
+  movement_type: string;
+  note?: string;
+  occurred_at: string;
+};
+export type Dashboard = {
+  products: number;
+  total_units: string;
+  low_stock: number;
+  out_of_stock: number;
+  inventory_value: string;
+  retail_value: string;
+  stock_in_today: string;
+  stock_out_today: string;
+  low_products: Product[];
+  recent_movements: Movement[];
+};
+export type Meta = { page: number; pages: number; total: number };
+export type Envelope<T> = { data: T; meta: Meta };

@@ -51,7 +51,7 @@ module Sales
           item = sale.sale_items.create!(line.merge(business: business, product: product, name: product.display_name,
             unit: product.unit, sku: product.sku, barcode: product.barcode, line_total: gross - share))
           Inventory::AdjustStock.call(product: product, user: user, quantity: -item.quantity, movement_type: "sale",
-            idempotency_key: "bill:#{sale.id}:#{item.id}", note: "Bill #{sale.number}")
+            idempotency_key: "bill:#{SecureRandom.uuid}", note: "Bill #{sale.number}")
         end
         # Any rounding remainder is allocated backwards to lines with enough value.
         if remaining > 0

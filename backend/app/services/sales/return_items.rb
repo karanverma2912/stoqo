@@ -27,7 +27,7 @@ module Sales
           raise ArgumentError, "Return exceeds the unreturned quantity for #{item.name}" if q + item.returned_quantity > item.quantity
           amount = (item.line_total * (item.returned_quantity + q) / item.quantity).round(2) - (item.line_total * item.returned_quantity / item.quantity).round(2)
           record.sale_return_items.create!(sale: sale, sale_item: item, quantity: q, amount: amount)
-          Inventory::AdjustStock.call(product: products.fetch(item.product_id), user: user, quantity: q, movement_type: "return_in", idempotency_key: "return:#{record.id}:#{item.id}", note: "Return for #{sale.number}: #{a['reason']}")
+          Inventory::AdjustStock.call(product: products.fetch(item.product_id), user: user, quantity: q, movement_type: "return_in", idempotency_key: "return:#{SecureRandom.uuid}", note: "Return for #{sale.number}: #{a['reason']}")
           item.update!(returned_quantity: item.returned_quantity + q)
           total += amount
         end

@@ -18,7 +18,7 @@ public class MainActivity extends Activity {
  private String origin;
  private PermissionRequest cameraRequest;
  private ValueCallback<Uri[]> fileCallback;
- @Override public void onCreate(Bundle b){super.onCreate(b);String saved=getPreferences(0).getString("origin","");if(saved.isEmpty())setup();else launch(saved);}
+ @Override public void onCreate(Bundle b){super.onCreate(b);if(android.os.Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,()->navigateBack());String saved=getPreferences(0).getString("origin","");if(saved.isEmpty())setup();else launch(saved);}
  private void setup(){
   LinearLayout layout=new LinearLayout(this);layout.setOrientation(LinearLayout.VERTICAL);layout.setPadding(32,72,32,32);
   TextView title=new TextView(this);title.setText("stoqo.\nConnect your store");title.setTextSize(30);layout.addView(title);
@@ -50,6 +50,7 @@ public class MainActivity extends Activity {
  }
  @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){super.onRequestPermissionsResult(code,permissions,results);if(code==10&&cameraRequest!=null){if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED&&trusted(cameraRequest.getOrigin()))cameraRequest.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});else cameraRequest.deny();cameraRequest=null;}}
  @Override protected void onActivityResult(int code,int result,Intent data){super.onActivityResult(code,result,data);if(code==11&&fileCallback!=null){fileCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result,data));fileCallback=null;}}
- @Override public void onBackPressed(){if(web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}
+ private void navigateBack(){if(web!=null&&web.canGoBack())web.goBack();else finish();}
+ @Override public boolean onKeyDown(int keyCode,android.view.KeyEvent event){if(android.os.Build.VERSION.SDK_INT<33&&keyCode==android.view.KeyEvent.KEYCODE_BACK){navigateBack();return true;}return super.onKeyDown(keyCode,event);}
  @Override protected void onDestroy(){if(cameraRequest!=null)cameraRequest.deny();if(fileCallback!=null)fileCallback.onReceiveValue(null);if(web!=null)web.destroy();super.onDestroy();}
 }

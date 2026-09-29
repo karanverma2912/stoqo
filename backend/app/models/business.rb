@@ -1,6 +1,8 @@
 class Business < ApplicationRecord
   belongs_to :subscription_plan
   has_many :business_memberships
+  has_many :sales
+  has_many :sale_returns
   has_many :products
   has_many :categories
   has_many :stock_movements

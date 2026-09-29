@@ -74,6 +74,22 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
       () => document.documentElement.scrollWidth > innerWidth,
     ),
   ).toBe(false);
+  await page.getByRole("link", {name: "Checkout", exact: true}).last().click();
+  await page.getByLabel("Scan or enter barcode", {exact: true}).fill("STOQO-TEST-M");
+  await page.getByRole("button", {name: "Add to cart", exact: true}).click();
+  await page.getByLabel("Quantity Everyday Tee", {exact: true}).fill("2");
+  await page.getByRole("button", {name: "Complete sale & create bill"}).click();
+  await page.getByRole("button", {name: "Confirm sale", exact: true}).click();
+  await expect(page.locator(".receipt").getByText("₹1,198.00", {exact: true}).first()).toBeVisible();
+  await page.getByRole("button", {name: "Close", exact: true}).last().click();
+  await page.reload();
+  await page.getByRole("tab", {name: "Bills", exact: true}).click();
+  await page.locator(".bill-history-row").first().click();
+  await expect(page.locator(".receipt")).toContainText("Everyday Tee");
+  await page.getByRole("button", {name: "Close", exact: true}).last().click();
+  await page.getByLabel("Checkout language").selectOption("hi");
+  await expect(page.getByRole("heading", {name: "अब बिल बनाना आसान।"})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
   await page.screenshot({
     path: "test-results/inventory-mobile.png",
     fullPage: true,

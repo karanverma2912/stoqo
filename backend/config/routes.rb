@@ -8,6 +8,9 @@ Rails.application.routes.draw do
       delete "auth/logout", to: "auth#logout"
       resources :businesses, only: [:index, :create, :update]
       resources :categories, only: [:index, :create]
+      resources :sales, only: [:index, :show, :create] do
+        member { post :return_items }
+      end
       resources :products, only: [:index, :show, :create, :update] do
         collection { get :export }
         member { get :image }

@@ -10,6 +10,7 @@ import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import {
   Boxes,
+  ShoppingBag,
   House,
   Package,
   Activity,
@@ -46,9 +47,11 @@ const Scanner = dynamic(() => import("./scanner"), {
   ssr: false,
   loading: () => <p>Opening scanner…</p>,
 });
+const Checkout = dynamic(() => import("./checkout").then(m => m.Checkout));
 const nav = [
   { label: "Overview", path: "/app", icon: House },
   { label: "Inventory", path: "/app/inventory", icon: Package },
+  { label: "Checkout", path: "/app/checkout", icon: ShoppingBag },
   { label: "Activity", path: "/app/activity", icon: Activity },
   { label: "Reports", path: "/app/reports", icon: ChartNoAxesCombined },
 ];
@@ -283,6 +286,8 @@ export function Workspace() {
             />
           ) : pathname === "/app/inventory" ? (
             <Inventory id={id!} business={business} open={open} />
+          ) : pathname === "/app/checkout" ? (
+            <Checkout key={id} business={business} userId={user.data!.data.id} />
           ) : pathname === "/app/activity" ? (
             <ActivityView id={id!} />
           ) : pathname === "/app/reports" ? (
@@ -321,11 +326,11 @@ export function Workspace() {
           <span>Scan</span>
         </button>
         <Link
-          href="/app/activity"
-          aria-current={pathname === "/app/activity" ? "page" : undefined}
+          href="/app/checkout"
+          aria-current={pathname === "/app/checkout" ? "page" : undefined}
         >
-          <Activity />
-          <span>Activity</span>
+          <ShoppingBag />
+          <span>Checkout</span>
         </Link>
         <button onClick={() => open("more")}>
           <Ellipsis />
@@ -415,6 +420,7 @@ export function Workspace() {
               />
             </label>
             <div className="command-links">
+              <button onClick={() => { router.push("/app/checkout"); close(); }}><ShoppingBag />Checkout</button>
               <button onClick={() => open("add")}>
                 <Plus />
                 Add product

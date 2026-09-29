@@ -6,6 +6,7 @@ class Business < ApplicationRecord
   has_many :stock_movements
   has_many :activities
   has_many :notifications
+  has_many :team_invitations
   has_many :imports
   validates :name, presence: true, length: {maximum: 120}
   validates :currency, format: {with: /\A[A-Z]{3}\z/}

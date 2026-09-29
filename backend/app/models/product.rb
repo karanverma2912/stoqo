@@ -4,6 +4,8 @@ class Product < ApplicationRecord
   has_many :stock_movements
   has_one_attached :image
   before_validation { self.sku = sku.presence; self.barcode = barcode.presence }
+  validates :size, :color, length: {maximum: 60}
+  def display_name = [name, color, size].compact_blank.join(" · ")
   validates :name, presence: true, length: {maximum: 200}
   validates :sku, :barcode, uniqueness: {scope: :business_id}, allow_nil: true, length: {maximum: 100}
   validates :purchase_price, :selling_price, :low_stock_threshold, numericality: {greater_than_or_equal_to: 0, less_than: 100_000_000}

@@ -37,8 +37,11 @@ class ApplicationController < ActionController::API
     current_business
     @membership
   end
-  def require_write!
-    authorize current_business, :write?, policy_class: BusinessPolicy
+  def require_stock!
+    require_write!(:stock?)
+  end
+  def require_write!(permission = :write?)
+    authorize current_business, permission, policy_class: BusinessPolicy
     error("trial_expired", "Your trial has ended. Your inventory is still available to view and export.", :payment_required) unless current_business.writable?
   end
   def data(value, meta: {}, status: :ok) = render(json: {data: value, meta: meta}, status: status)
@@ -51,10 +54,10 @@ class ApplicationController < ActionController::API
   end
   def user_json(user) = user.as_json(only: [:id, :name, :email])
   def product_json(product)
-    product.as_json.except("business_id").merge("stock_status" => product.stock_status, "category_name" => product.category&.name,
+    product.as_json.except("business_id").merge("display_name" => product.display_name, "stock_status" => product.stock_status, "category_name" => product.category&.name,
       "image_url" => product.image.attached? ? "/api/backend/products/#{product.id}/image?business_id=#{product.business_id}" : nil)
   end
   def movement_json(movement)
-    movement.as_json.except("business_id", "idempotency_key").merge("product_name" => movement.product.name, "user_name" => movement.user.name)
+    movement.as_json.except("business_id", "idempotency_key").merge("product_name" => movement.product.display_name, "user_name" => movement.user.name)
   end
 end

@@ -22,7 +22,7 @@ class ProductImportJob < ApplicationJob
             Product.transaction(requires_new: true) do
               category = import.business.categories.find_or_create_by!(name: row["Category"].to_s.strip) if row["Category"].present?
               Inventory::CreateProduct.call(business: import.business, user: import.user,
-                attributes: {name: row["Product Name"], sku: row["SKU"], barcode: row["Barcode"], purchase_price: row["Purchase Price"].presence || 0,
+                attributes: {name: row["Product Name"], size: row["Size"], color: row["Color"], sku: row["SKU"], barcode: row["Barcode"], purchase_price: row["Purchase Price"].presence || 0,
                   selling_price: row["Selling Price"].presence || 0, low_stock_threshold: row["Low Stock Threshold"].presence || 5, category: category},
                 initial_quantity: row["Quantity"].presence || 0)
             end

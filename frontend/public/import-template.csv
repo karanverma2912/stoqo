@@ -1,2 +1,2 @@
-Product Name,SKU,Barcode,Purchase Price,Selling Price,Quantity,Low Stock Threshold,Category
-Everyday tee,TEE-001,,300,599,20,5,Clothing
+Product Name,SKU,Barcode,Purchase Price,Selling Price,Quantity,Low Stock Threshold,Category,Size,Color
+Everyday tee,TEE-001,,300,599,20,5,Clothing,M,Black

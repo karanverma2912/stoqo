@@ -1,11 +1,12 @@
 require "csv"
 class Api::V1::ProductsController < ApplicationController
-  before_action :require_write!, only: [:create, :update]
+  before_action :require_stock!, only: :create
+  before_action :require_write!, only: :update
   def index
     scope = current_business.products.active.includes(:category, image_attachment: :blob)
     if params[:q].present?
       q = "%#{Product.sanitize_sql_like(params[:q].to_s.first(200))}%"
-      scope = scope.where("products.name ILIKE :q OR sku ILIKE :q OR barcode ILIKE :q", q: q)
+      scope = scope.where("products.name ILIKE :q OR sku ILIKE :q OR barcode ILIKE :q OR size ILIKE :q OR color ILIKE :q", q: q)
     end
     scope = scope.where(barcode: params[:barcode]) if params[:barcode].present?
     scope = scope.where(category_id: params[:category_id]) if params[:category_id].present?
@@ -39,15 +40,15 @@ class Api::V1::ProductsController < ApplicationController
   def export
     authorize current_business, :report?, policy_class: BusinessPolicy
     csv = CSV.generate do |out|
-      out << ["Product Name", "SKU", "Barcode", "Purchase Price", "Selling Price", "Quantity", "Low Stock Threshold", "Category"]
+      out << ["Product Name", "SKU", "Barcode", "Purchase Price", "Selling Price", "Quantity", "Low Stock Threshold", "Category", "Size", "Color"]
       current_business.products.active.includes(:category).find_each do |p|
-        out << [p.name, p.sku, p.barcode, p.purchase_price, p.selling_price, p.current_stock, p.low_stock_threshold, p.category&.name].map { |v| v.is_a?(String) && v.match?(/\A[=+@\-\t\r]/) ? "'#{v}" : v }
+        out << [p.name, p.sku, p.barcode, p.purchase_price, p.selling_price, p.current_stock, p.low_stock_threshold, p.category&.name, p.size, p.color].map { |v| v.is_a?(String) && v.match?(/\A[=+@\-\t\r]/) ? "'#{v}" : v }
       end
     end
     send_data csv, filename: "stoqo-inventory-#{Date.current}.csv", type: "text/csv"
   end
   private
   def product_params
-    params.require(:product).permit(:name, :description, :sku, :barcode, :purchase_price, :selling_price, :low_stock_threshold, :unit, :status, :category_id, :image)
+    params.require(:product).permit(:name, :size, :color, :description, :sku, :barcode, :purchase_price, :selling_price, :low_stock_threshold, :unit, :status, :category_id, :image)
   end
 end

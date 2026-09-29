@@ -12,6 +12,7 @@ const allowed = new Set([
   "imports",
   "notifications",
   "team_members",
+  "team_invitations",
   "subscriptions",
 ]);
 async function proxy(
@@ -45,7 +46,7 @@ async function proxy(
     headers.set("X-Forwarded-For", req.headers.get("x-vercel-forwarded-for")!);
   try {
     const upstream = await fetch(
-      `${process.env.API_URL || "http://localhost:3001"}/api/v1/${path.join("/")}${req.nextUrl.search}`,
+      `${process.env.API_URL || (process.env.API_HOST ? `http://${process.env.API_HOST}:${process.env.API_PORT || "10000"}` : "http://localhost:3001")}/api/v1/${path.join("/")}${req.nextUrl.search}`,
       {
         method: req.method,
         headers,
@@ -71,7 +72,7 @@ async function proxy(
       });
     if (upstream.ok && upstream.headers.get("content-type")?.startsWith("image/")) return new NextResponse(await upstream.arrayBuffer(), {headers:{"Content-Type":upstream.headers.get("content-type")!,"Cache-Control":"private, no-store"}});
     const body = await upstream.json();
-    if (body.data?.token) {
+    if (path[0] === "auth" && body.data?.token) {
       jar.set("stoqo_session", body.data.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

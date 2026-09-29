@@ -32,7 +32,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
         method: "POST",
         body: JSON.stringify(signup ? { user: values } : values),
       });
-      router.push("/app");
+      router.push(sessionStorage.getItem("stoqo_invitation") ? "/join" : "/app");
     } catch (e) {
       setError((e as Error).message);
     }

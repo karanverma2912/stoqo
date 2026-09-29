@@ -11,7 +11,7 @@ module Inventory
       raise InvalidMovement, "Quantity must be negative for outgoing stock" if OUTGOING.include?(movement_type) && amount.positive?
       raise InvalidMovement, "A request key is required" if idempotency_key.blank?
       membership = product.business.business_memberships.find_by(user: user)
-      raise InvalidMovement, "Not permitted" unless membership && BusinessPolicy.new(membership, product.business).write?
+      raise InvalidMovement, "Not permitted" unless membership && BusinessPolicy.new(membership, product.business).stock?
       product.with_lock do
         existing = product.business.stock_movements.find_by(idempotency_key: idempotency_key)
         if existing

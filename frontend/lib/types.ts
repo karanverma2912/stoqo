@@ -11,6 +11,9 @@ export type Product = {
   id: number;
   name: string;
   description?: string;
+  size?: string;
+  color?: string;
+  display_name?: string;
   sku?: string;
   barcode?: string;
   selling_price: string;

@@ -24,12 +24,20 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
     .click();
   await page.getByLabel("Product name").fill("Everyday Tee");
   await page.getByLabel("Selling price").fill("599");
+  await page.getByLabel("Size (optional)").fill("M");
+  await page.getByLabel("Colour (optional)").fill("Black");
   await page.getByLabel("Opening stock").fill("10");
+  await page.getByText("More options", {exact: false}).click();
+  await page.getByLabel("Barcode", {exact: true}).fill("STOQO-TEST-M");
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Add product" })
     .click();
   await expect(page.getByText("A new product on your shelves")).toBeVisible();
+  await page.getByRole("button", {name: "Scan barcode", exact: true}).first().click();
+  await page.getByLabel("Scan a photo").setInputFiles("e2e/fixtures/barcode.svg");
+  await expect(page.getByRole("dialog").getByText("10 units", {exact: true})).toBeVisible();
+  await page.getByRole("button", {name: "Close", exact: true}).click();
   await page
     .getByRole("link", { name: "Inventory", exact: true })
     .first()
@@ -40,7 +48,7 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
   ).toBeVisible();
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Stock out" })
+    .getByRole("button", { name: "Sold / stock out" })
     .click();
   await page.getByLabel("Quantity", { exact: true }).fill("3");
   await page.getByRole("button", { name: "Remove stock" }).click();

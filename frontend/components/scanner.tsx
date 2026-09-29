@@ -2,107 +2,13 @@
 import { useRef, useState, useEffect } from "react";
 import { BrowserMultiFormatReader, IScannerControls } from "@zxing/browser";
 import { Camera, ScanLine } from "lucide-react";
-export default function Scanner({
-  onResult,
-}: {
-  onResult: (code: string) => Promise<void>;
-}) {
-  const video = useRef<HTMLVideoElement>(null);
-  const controls = useRef<IScannerControls | null>(null);
-  const [error, setError] = useState("");
-  const [running, setRunning] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const alive = useRef(true);
-  useEffect(
-    () => () => {
-      alive.current = false;
-      controls.current?.stop();
-    },
-    [],
-  );
-  async function found(code: string) {
-    controls.current?.stop();
-    setRunning(false);
-    setBusy(true);
-    try {
-      await onResult(code);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function start() {
-    setError("");
-    setRunning(true);
-    try {
-      const reader = new BrowserMultiFormatReader();
-      let detected = false;
-      const c = await reader.decodeFromConstraints(
-        { video: { facingMode: "environment" } },
-        video.current!,
-        (result, _err, scanner) => {
-          if (result && !detected) {
-            detected = true;
-            scanner.stop();
-            void found(result.getText());
-          }
-        },
-      );
-      controls.current = c;
-      if (!alive.current) c.stop();
-    } catch {
-      setRunning(false);
-      setError(
-        "Camera unavailable. Allow camera access, or enter the barcode below.",
-      );
-    }
-  }
-  return (
-    <div className="scanner">
-      <p className="muted">
-        Point your camera at a product barcode. We’ll find it on your shelves.
-      </p>
-      <div className="camera-view">
-        <video ref={video} muted playsInline />
-        <div className="scan-frame" />
-        {!running && <ScanLine size={60} />}
-      </div>
-      <button
-        className="button primary full"
-        onClick={start}
-        disabled={running || busy}
-      >
-        <Camera size={19} />
-        {running ? "Looking for a barcode…" : "Use your camera"}
-      </button>
-      <p className="divider-text">or type it in</p>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void found(
-            String(new FormData(e.currentTarget).get("barcode")).trim(),
-          );
-        }}
-      >
-        <label>
-          Barcode
-          <input
-            name="barcode"
-            required
-            maxLength={100}
-            placeholder="Enter barcode number"
-          />
-        </label>
-        <button className="button subtle full" disabled={busy}>
-          Find product
-        </button>
-      </form>
-      {error && (
-        <p className="error-box" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
-  );
+export default function Scanner({onResult}:{onResult:(code:string)=>Promise<void>}) {
+ const video=useRef<HTMLVideoElement>(null), controls=useRef<IScannerControls|null>(null),alive=useRef(false),lock=useRef(false),generation=useRef(0);
+ const [error,setError]=useState(''),[running,setRunning]=useState(false),[busy,setBusy]=useState(false);
+ function stop(){generation.current++;controls.current?.stop();controls.current=null;const stream=video.current?.srcObject;if(typeof MediaStream!=='undefined'&&stream instanceof MediaStream)stream.getTracks().forEach(t=>t.stop())}
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;stop()}},[]);
+ async function found(raw:string){const code=raw.trim();if(!code||lock.current)return;lock.current=true;stop();setRunning(false);setBusy(true);setError('');try{await onResult(code)}catch(e){if(alive.current)setError((e as Error).message)}finally{lock.current=false;if(alive.current)setBusy(false)}}
+ async function start(){if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia){setError('Camera requires HTTPS and a supported browser. Open Stoqo in Chrome, or use a photo below.');return}stop();const attempt=generation.current;setError('');setRunning(true);try{let detected=false;const c=await new BrowserMultiFormatReader().decodeFromConstraints({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}},video.current!,(result,_err,scanner)=>{if(result&&!detected&&alive.current&&attempt===generation.current){detected=true;scanner.stop();void found(result.getText())}});if(!alive.current||attempt!==generation.current)c.stop();else controls.current=c}catch(e){if(!alive.current)return;stop();setRunning(false);setError((e as Error).name==='NotAllowedError'?'Camera permission denied. Allow camera access in browser/app settings, or scan a photo.':'Camera unavailable or in use. Close other camera apps, try again, or scan a photo.')}}
+ async function photo(file?:File){if(!file||lock.current)return;if(file.size>15*1024*1024){setError('Choose a photo under 15 MB');return}stop();setRunning(false);setBusy(true);setError('');const url=URL.createObjectURL(file);try{const result=await new BrowserMultiFormatReader().decodeFromImageUrl(url);await found(result.getText())}catch{if(alive.current)setError('No barcode found. Try a sharp close-up with the full barcode visible, or type the number.')}finally{URL.revokeObjectURL(url);if(alive.current)setBusy(false)}}
+ return <div className="scanner"><p className="muted">Keep the full barcode in the frame, in good light. Saved items open with their details. New codes open Add product.</p><div className="camera-view"><video ref={video} autoPlay muted playsInline/><div className="scan-frame"/>{!running&&<ScanLine size={60}/>}</div><button className="button primary full" onClick={start} disabled={running||busy}><Camera size={19}/>{running?'Looking for a barcode…':'Use your camera'}</button>{running&&<button className="button subtle full" onClick={()=>{stop();setRunning(false)}}>Stop camera</button>}<label>Scan a photo<input type="file" accept="image/*" capture="environment" disabled={busy} onChange={e=>{void photo(e.target.files?.[0]);e.target.value=''}}/></label><p className="divider-text">or use a USB scanner / type it in</p><form onSubmit={e=>{e.preventDefault();void found(String(new FormData(e.currentTarget).get('barcode')||''))}}><label>Barcode<input name="barcode" required maxLength={100} autoComplete="off" placeholder="Scan or enter barcode number"/></label><button className="button subtle full" disabled={busy}>{busy?'Finding product…':'Find product'}</button></form>{error&&<p className="error-box" role="alert">{error}</p>}</div>
 }

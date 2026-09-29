@@ -1,5 +1,5 @@
 class Api::V1::StockMovementsController < ApplicationController
-  before_action :require_write!, only: :create
+  before_action :require_stock!, only: :create
   def index
     scope = current_business.stock_movements.includes(:product, :user).order(occurred_at: :desc, id: :desc)
     scope = scope.where(product_id: current_business.products.find(params[:product_id]).id) if params[:product_id].present?

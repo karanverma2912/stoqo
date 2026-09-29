@@ -18,7 +18,10 @@ Rails.application.routes.draw do
       get "activities", to: "activities#index"
       resources :imports, only: [:create, :show]
       resources :notifications, only: [:index, :update]
-      get "team_members", to: "team_members#index"
+      resources :team_members, only: [:index, :destroy]
+      resources :team_invitations, only: [:create, :destroy] do
+        collection { post :accept }
+      end
       get "subscriptions", to: "subscriptions#index"
     end
   end

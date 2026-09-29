@@ -5,6 +5,9 @@ class BusinessPolicy
   def write?
     %w[owner admin manager].include?(@role)
   end
+  def stock?
+    %w[owner admin manager staff].include?(@role)
+  end
   def manage?
     %w[owner admin].include?(@role)
   end

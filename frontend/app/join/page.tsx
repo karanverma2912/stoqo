@@ -1,0 +1,7 @@
+"use client";
+import {useEffect,useState} from 'react';
+import Link from 'next/link';
+import {api,ApiError} from '@/lib/api';
+export default function Join(){const [token,setToken]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[auth,setAuth]=useState(false);
+useEffect(()=>{const t=new URLSearchParams(location.hash.slice(1)).get('token')||sessionStorage.getItem('stoqo_invitation')||'';if(t){sessionStorage.setItem('stoqo_invitation',t);setToken(t);history.replaceState(null,'','/join')}},[]);
+return <main className="auth-page"><section className="auth-card"><h1>Join your store.</h1><p>Use the email address your store owner invited. Your own login keeps every stock change accountable.</p>{!token?<p>Open the invitation link from your store owner.</p>:<button className="button primary full" disabled={busy} onClick={async()=>{setBusy(true);setError('');try{const r=await api<{business_id:number}>('team_invitations/accept',{method:'POST',body:JSON.stringify({token})});sessionStorage.removeItem('stoqo_invitation');localStorage.setItem('stoqo_business',String(r.data.business_id));location.href='/app'}catch(e){if(e instanceof ApiError&&e.status===401)setAuth(true);setError((e as Error).message)}finally{setBusy(false)}}}>{busy?'Joining…':'Accept invitation'}</button>}{error&&<p role="alert" className="error-box">{error}</p>}{auth&&<p><Link href="/login">Sign in</Link> or <Link href="/signup">create your account</Link>, then accept this invitation.</p>}</section></main>}

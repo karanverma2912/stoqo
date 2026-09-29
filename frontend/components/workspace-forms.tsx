@@ -30,6 +30,8 @@ const quantity = z
   );
 export const productSchema = z.object({
   name: z.string().trim().min(1, "Give your product a name").max(200),
+  size: z.string().max(60),
+  color: z.string().max(60),
   selling_price: price,
   purchase_price: price,
   initial_quantity: quantity,
@@ -68,6 +70,8 @@ export function ProductForm({
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: product?.name || "",
+      size: product?.size || "",
+      color: product?.color || "",
       selling_price: product?.selling_price || "",
       purchase_price: product?.purchase_price || "",
       initial_quantity: "",
@@ -133,6 +137,11 @@ export function ProductForm({
   }
   return (
     <form onSubmit={handleSubmit(submit)} className="product-form">
+      {barcode && <p className="muted">New barcode: {barcode}. Add its details once; the next scan will find this item.</p>}
+      <div className="form-grid">
+        <label>Size (optional)<input placeholder="M, XL, 32, 500 ml…" {...register("size")} /></label>
+        <label>Colour (optional)<input placeholder="Black, white…" {...register("color")} /></label>
+      </div>
       <label>
         Product name <span className="required">*</span>
         <input
@@ -367,7 +376,7 @@ export function StockForm({
           <div className="stock-product-options">
             {query.data?.data.map((p) => (
               <button type="button" key={p.id} onClick={() => setSelected(p)}>
-                <span>{p.name}</span>
+                <span>{p.display_name || p.name}</span>
                 <small>
                   {units(p.current_stock)} {p.unit}
                 </small>

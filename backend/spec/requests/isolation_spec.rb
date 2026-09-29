@@ -42,9 +42,11 @@ RSpec.describe "Business isolation", type: :request do
     expect(response).to have_http_status(:created)
     expect(business.products.last.current_stock).to eq(0)
   end
-  it "rejects staff writes" do
+  it "allows staff to register a new product but rejects editing existing products" do
     membership.update!(role: "staff")
     post "/api/v1/products", params: {product: {name: "Test"}}, headers: headers, as: :json
+    expect(response).to have_http_status(:created)
+    patch "/api/v1/products/#{business.products.last.id}", params: {product: {name: "Changed"}}, headers: headers, as: :json
     expect(response).to have_http_status(:forbidden)
   end
   it "keeps expired trials readable but rejects writes" do

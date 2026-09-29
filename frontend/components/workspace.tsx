@@ -41,6 +41,7 @@ import { api, ApiError, money, units } from "@/lib/api";
 import type { Business, Dashboard, Product, Movement, User } from "@/lib/types";
 import { Sheet } from "./ui/sheet";
 import { ProductForm, StockForm, ImportForm } from "./workspace-forms";
+import { Team } from "./team";
 const Scanner = dynamic(() => import("./scanner"), {
   ssr: false,
   loading: () => <p>Opening scanner…</p>,
@@ -57,6 +58,7 @@ export function Workspace() {
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
   const [businessId, setBusinessId] = useState<number>();
+  useEffect(() => { const saved = localStorage.getItem("stoqo_business"); if (saved) setBusinessId(Number(saved)); }, []);
   const [modal, setModal] = useState("");
   const [selected, setSelected] = useState<Product>();
   const [barcode, setBarcode] = useState("");
@@ -340,7 +342,7 @@ export function Workspace() {
               edit: "Edit product",
               in: "Stock in",
               out: "Stock out",
-              detail: selected?.name,
+              detail: selected?.display_name || selected?.name,
               scan: "Scan & go",
               command: "Find your next move",
               import: "Bring your inventory",
@@ -448,7 +450,7 @@ export function Workspace() {
                 >
                   <ProductAvatar product={p} />
                   <span>
-                    {p.name}
+                    {p.display_name || p.name}
                     <small>{p.sku || p.barcode || "No SKU"}</small>
                   </span>
                   <strong>
@@ -669,7 +671,7 @@ function Overview({
                 >
                   <ProductAvatar product={p} />
                   <span>
-                    <strong>{p.name}</strong>
+                    <strong>{p.display_name || p.name}</strong>
                     <small>{p.category_name || p.unit}</small>
                   </span>
                 </button>
@@ -923,7 +925,7 @@ function Inventory({
                 >
                   <ProductAvatar product={p} />
                   <span>
-                    <strong>{p.name}</strong>
+                    <strong>{p.display_name || p.name}</strong>
                     <small>{p.sku || p.category_name || "No SKU"}</small>
                   </span>
                 </button>
@@ -943,7 +945,7 @@ function Inventory({
                 </span>
                 <button
                   className="icon-button"
-                  aria-label={`View ${p.name}`}
+                  aria-label={`View ${p.display_name || p.name}`}
                   onClick={() => open("detail", p)}
                 >
                   <ArrowUpRight size={19} />
@@ -1020,7 +1022,7 @@ function ProductDetail({
         </button>
         <button className="button subtle" onClick={() => open("out", product)}>
           <ArrowUpRight size={18} />
-          Stock out
+          Sold / stock out
         </button>
         <button
           className="icon-button"
@@ -1035,6 +1037,8 @@ function ProductDetail({
           ["Selling price", money(product.selling_price, currency)],
           ["Purchase price", money(product.purchase_price, currency)],
           ["SKU", product.sku || "—"],
+          ["Size", product.size || "—"],
+          ["Colour", product.color || "—"],
           ["Barcode", product.barcode || "—"],
           ["Category", product.category_name || "Uncategorized"],
           [
@@ -1359,6 +1363,7 @@ function SettingsView({
           <option value="dark">Dark</option>
         </select>
       </label>
+      {["owner", "admin"].includes(business.role || "") && <Team businessId={business.id} />}
       <h2>Your plan</h2>
       <p className="muted">
         {subscription.data?.data.status || "Loading…"} · Trial ends{" "}

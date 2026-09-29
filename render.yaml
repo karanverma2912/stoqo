@@ -11,14 +11,14 @@ services:
     healthCheckPath: /login
     envVars:
       - key: NODE_VERSION
-        value: 24
+        value: "24"
       - key: API_HOST
         fromService:
           type: web
           name: stoqo-api
           property: host
       - key: API_PORT
-        value: 10000
+        value: "10000"
   - type: web
     name: stoqo-api
     runtime: docker
@@ -29,7 +29,7 @@ services:
     healthCheckPath: /up
     envVars:
       - key: PORT
-        value: 10000
+        value: "10000"
       - key: RAILS_ENV
         value: production
       - key: SECRET_KEY_BASE

@@ -38,7 +38,6 @@ export default function Scanner({
   async function found(raw: string) {
     const code = raw.trim();
     if (!code || lock.current) return;
-    if (continuous && lastRead.current.code === code) return;
     lastRead.current = { code, at: Date.now() };
     lock.current = true;
     if (!continuous) {
@@ -88,6 +87,7 @@ export default function Scanner({
             lastRead.current = { code: "", at: 0 };
           if (
             result &&
+            (!continuous || result.getText().trim() !== lastRead.current.code) &&
             !detected &&
             alive.current &&
             attempt === generation.current

@@ -44,6 +44,8 @@ import type { Business, Dashboard, Product, Movement, User } from "@/lib/types";
 import { Sheet } from "./ui/sheet";
 import { ProductForm, StockForm, ImportForm } from "./workspace-forms";
 import { Team } from "./team";
+import { SubscriptionNotice } from "./subscription";
+const SubscriptionPage = dynamic(() => import("./subscription").then(m => m.SubscriptionPage));
 const Scanner = dynamic(() => import("./scanner"), {
   ssr: false,
   loading: () => <p>Opening scanner…</p>,
@@ -211,21 +213,7 @@ export function Workspace() {
           Add product
         </button>
         <div className="rail-bottom">
-          <div className="trial-card">
-            <span className="sparkle">✳</span>
-            <strong>A little room to grow.</strong>
-            <p>
-              Your trial ends{" "}
-              {new Date(business.trial_ends_at).toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "short",
-              })}
-              .
-            </p>
-            <button onClick={() => open("settings")}>
-              Your plan <ArrowUpRight size={15} />
-            </button>
-          </div>
+          <div className="trial-card"><span className="sparkle">✳</span><strong>A little room to grow.</strong><p>Check your plan, limits and access.</p><button onClick={() => {router.push("/app/subscription");close();}}>Plans & usage <ArrowUpRight size={15}/></button></div>
           <button className="nav-item" onClick={() => open("settings")}>
             <Settings size={18} />
             Settings
@@ -279,6 +267,7 @@ export function Workspace() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
         >
+          {pathname !== "/app/subscription" && <SubscriptionNotice business={business} />}
           {pathname === "/app" ? (
             <Overview
               id={id!}
@@ -288,6 +277,8 @@ export function Workspace() {
             />
           ) : pathname === "/app/inventory" ? (
             <Inventory id={id!} business={business} open={open} />
+          ) : pathname === "/app/subscription" ? (
+            <SubscriptionPage key={id} business={business} />
           ) : pathname === "/app/product-setup" ? (
             <ProductSetup key={id} business={business} userId={user.data!.data.id} />
           ) : pathname === "/app/checkout" ? (
@@ -509,6 +500,7 @@ export function Workspace() {
           <SettingsView
             business={business}
             onSaved={() => businesses.refetch()}
+            onNavigate={close}
             onLogout={async () => {
               await api("auth/logout", { method: "DELETE" });
               client.clear();
@@ -1309,29 +1301,19 @@ function Reports({ id, business }: { id: number; business: Business }) {
 }
 function SettingsView({
   business,
+  onNavigate,
   onSaved,
   onLogout,
 }: {
   business: Business;
   onSaved: () => void;
+  onNavigate: () => void;
   onLogout: () => Promise<void>;
 }) {
   const { theme, setTheme } = useTheme();
   const [name, setName] = useState(business.name);
   const [busy, setBusy] = useState(false);
-  const subscription = useQuery({
-    queryKey: ["subscription", business.id],
-    queryFn: () =>
-      api<{
-        status: string;
-        plans: {
-          id: number;
-          name: string;
-          monthly_price_paise: number;
-          currency: string;
-        }[];
-      }>("subscriptions", {}, business.id),
-  });
+
   return (
     <div className="settings">
       <form
@@ -1375,18 +1357,7 @@ function SettingsView({
         </select>
       </label>
       {["owner", "admin"].includes(business.role || "") && <Team businessId={business.id} />}
-      <h2>Your plan</h2>
-      <p className="muted">
-        {subscription.data?.data.status || "Loading…"} · Trial ends{" "}
-        {new Date(business.trial_ends_at).toLocaleDateString("en-IN")}
-      </p>
-      {subscription.data?.data.plans.map((p) => (
-        <div className="plan-row" key={p.id}>
-          <strong>{p.name}</strong>
-          <span>{money(p.monthly_price_paise / 100, p.currency)}/month</span>
-        </div>
-      ))}
-      <p className="muted">Self-service payments are coming soon.</p>
+      <Link className="button subtle full" href="/app/subscription" onClick={onNavigate}>Plans & usage</Link>
       <button
         className="button subtle full"
         onClick={() => onLogout().catch((e) => toast.error(e.message))}

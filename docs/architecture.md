@@ -22,7 +22,7 @@ Images use Active Storage; application validation accepts JPEG, PNG and WebP up 
 
 ## Trials and subscriptions
 
-SubscriptionPlan stores prices in minor units, currency, default-plan selection and trial_days. Business creation snapshots the trial end. Existing trials do not change if the default configuration changes. Seeds create Starter ₹49, Business ₹149 and Pro ₹299 with a 90-day launch trial, only when absent. To change future trial duration, update the default plan in the database. Expired trials are read-only; viewing and export remain available. Payment checkout, webhooks and self-service activation are not implemented.
+SubscriptionPlan stores prices in minor units, currency, default-plan selection and trial_days. Business creation snapshots the trial end. Existing trials do not change if the default configuration changes. Seeds create Starter ₹49, Business ₹149 and Pro ₹299 with a 90-day launch trial, only when absent. To change future trial duration, update the default plan in the database. Expired trials are read-only; viewing and export remain available. Plan requests, capacity enforcement and audited manual activation are implemented; see subscriptions.md. Automated payment checkout, webhooks and recurring billing are not connected.
 
 ## Future extension points
 

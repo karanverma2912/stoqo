@@ -42,7 +42,7 @@ class ApplicationController < ActionController::API
   end
   def require_write!(permission = :write?)
     authorize current_business, permission, policy_class: BusinessPolicy
-    error("trial_expired", "Your trial has ended. Your inventory is still available to view and export.", :payment_required) unless current_business.writable?
+    error("subscription_expired", "Your subscription is read-only. Your inventory remains available; ask the owner to review the plan.", :payment_required) unless current_business.writable?
   end
   def data(value, meta: {}, status: :ok) = render(json: {data: value, meta: meta}, status: status)
   def error(code, message, status, details = {}) = render(json: {error: {code: code, message: message, details: details}}, status: status)

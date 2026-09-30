@@ -115,6 +115,16 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
   await page.getByLabel("Scan a photo").setInputFiles({name:'internal.svg',mimeType:'image/svg+xml',buffer:Buffer.from(svg)});
   await expect(page.getByLabel("Quantity Classic Tee", {exact:true})).toHaveValue("2");
   await page.getByRole("button", {name:"Close",exact:true}).last().click();
+  await page.goto("/app/subscription");
+  await expect(page.getByRole("heading",{name:"Plans & usage"})).toBeVisible();
+  await page.locator(".subscription-plan").filter({has:page.getByRole("heading",{name:"Business",exact:true})}).getByRole("button",{name:"Request plan",exact:true}).click();
+  await page.getByRole("button",{name:"Save plan request",exact:true}).click();
+  await expect(page.getByText("Business request pending",{exact:true})).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Business request pending",{exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Cancel request",exact:true}).click();
+  await page.getByRole("button",{name:"Confirm cancellation",exact:true}).click();
+  await expect(page.locator(".subscription-history").getByText("cancelled",{exact:true})).toBeVisible();
   await page.screenshot({
     path: "test-results/inventory-mobile.png",
     fullPage: true,

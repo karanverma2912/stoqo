@@ -29,6 +29,8 @@ Rails.application.routes.draw do
         collection { post :accept }
       end
       get "subscriptions", to: "subscriptions#index"
+      post "subscriptions/requests", to: "subscriptions#request_plan"
+      delete "subscriptions/requests/:id", to: "subscriptions#cancel_request"
     end
   end
 end

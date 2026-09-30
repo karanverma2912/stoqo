@@ -19,7 +19,7 @@ class ProductImportJob < ApplicationJob
         raise ArgumentError, "Import up to 5,000 rows at a time" if rows.size > 5000
         rows.each_with_index do |row, i|
           begin
-            Product.transaction(requires_new: true) do
+            import.business.with_lock("FOR NO KEY UPDATE", requires_new: true) do
               category = import.business.categories.find_or_create_by!(name: row["Category"].to_s.strip) if row["Category"].present?
               Inventory::CreateProduct.call(business: import.business, user: import.user,
                 attributes: {name: row["Product Name"], size: row["Size"], color: row["Color"], sku: row["SKU"], barcode: row["Barcode"], purchase_price: row["Purchase Price"].presence || 0,

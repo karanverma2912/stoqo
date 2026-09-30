@@ -1,3 +1,4 @@
+import { apiOrigin } from "@/lib/api-origin";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 const allowed = new Set([
@@ -48,7 +49,7 @@ async function proxy(
     headers.set("X-Forwarded-For", req.headers.get("x-vercel-forwarded-for")!);
   try {
     const upstream = await fetch(
-      `${process.env.API_URL || (process.env.API_HOST ? `http://${process.env.API_HOST}:${process.env.API_PORT || "10000"}` : "http://localhost:3001")}/api/v1/${path.join("/")}${req.nextUrl.search}`,
+      `${apiOrigin()}/api/v1/${path.join("/")}${req.nextUrl.search}`,
       {
         method: req.method,
         headers,

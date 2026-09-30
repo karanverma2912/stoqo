@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   get "up", to: "rails/health#show"
+  get "ready", to: "readiness#show"
   namespace :api do
     namespace :v1 do
       post "auth/signup", to: "auth#signup"

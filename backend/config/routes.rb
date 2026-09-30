@@ -11,9 +11,12 @@ Rails.application.routes.draw do
       resources :sales, only: [:index, :show, :create] do
         member { post :return_items }
       end
+      resources :product_groups, only: [:index, :show, :create] do
+        member { post :add_variants }
+      end
       resources :products, only: [:index, :show, :create, :update] do
         collection { get :export }
-        member { get :image }
+        member { get :image; post :generate_barcode }
       end
       resources :stock_movements, only: [:index, :create]
       get "dashboard", to: "dashboard#show"

@@ -10,6 +10,7 @@ import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import {
   Boxes,
+  Layers3,
   ShoppingBag,
   House,
   Package,
@@ -47,6 +48,7 @@ const Scanner = dynamic(() => import("./scanner"), {
   ssr: false,
   loading: () => <p>Opening scanner…</p>,
 });
+const ProductSetup = dynamic(() => import("./product-setup").then(m => m.ProductSetup));
 const Checkout = dynamic(() => import("./checkout").then(m => m.Checkout));
 const nav = [
   { label: "Overview", path: "/app", icon: House },
@@ -286,6 +288,8 @@ export function Workspace() {
             />
           ) : pathname === "/app/inventory" ? (
             <Inventory id={id!} business={business} open={open} />
+          ) : pathname === "/app/product-setup" ? (
+            <ProductSetup key={id} business={business} userId={user.data!.data.id} />
           ) : pathname === "/app/checkout" ? (
             <Checkout key={id} business={business} userId={user.data!.data.id} />
           ) : pathname === "/app/activity" ? (
@@ -835,6 +839,7 @@ function Inventory({
           <p>A home for every product, big or small.</p>
         </div>
         <div className="heading-actions">
+          <Link className="button subtle" href="/app/product-setup"><Layers3 size={17} />Sizes & labels</Link>
           <button className="button subtle" onClick={() => open("import")}>
             <Upload size={17} />
             Import

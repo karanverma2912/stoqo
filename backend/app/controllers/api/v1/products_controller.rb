@@ -1,13 +1,15 @@
 require "csv"
 class Api::V1::ProductsController < ApplicationController
   before_action :require_stock!, only: :create
-  before_action :require_write!, only: :update
+  before_action :require_write!, only: [:update, :generate_barcode]
   def index
     scope = current_business.products.active.includes(:category, image_attachment: :blob)
     if params[:q].present?
       q = "%#{Product.sanitize_sql_like(params[:q].to_s.first(200))}%"
       scope = scope.where("products.name ILIKE :q OR sku ILIKE :q OR barcode ILIKE :q OR size ILIKE :q OR color ILIKE :q", q: q)
     end
+    scope = scope.where(product_group_id: nil) if params[:ungrouped] == "true"
+    scope = scope.where(product_group_id: params[:product_group_id]) if params[:product_group_id].present?
     scope = scope.where(barcode: params[:barcode]) if params[:barcode].present?
     scope = scope.where(category_id: params[:category_id]) if params[:category_id].present?
     scope = scope.low if params[:filter] == "low"
@@ -34,6 +36,16 @@ class Api::V1::ProductsController < ApplicationController
     Product.transaction do
       product.update!(product_params)
       current_business.activities.create!(user: current_user, action: "product_updated", subject_name: product.name, details: {product_id: product.id, changes: product.saved_changes.except("updated_at")})
+    end
+    data(product_json(product))
+  end
+  def generate_barcode
+    product = current_business.products.find(params[:id])
+    product.with_lock do
+      if product.barcode.blank?
+        product.update!(barcode: "SQ#{SecureRandom.hex(6).upcase}")
+        current_business.activities.create!(user: current_user, action: "barcode_generated", subject_name: product.name, details: {product_id: product.id})
+      end
     end
     data(product_json(product))
   end

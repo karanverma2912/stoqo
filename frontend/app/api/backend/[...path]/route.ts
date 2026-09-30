@@ -4,6 +4,7 @@ const allowed = new Set([
   "auth",
   "businesses",
   "products",
+  "product_groups",
   "sales",
   "categories",
   "stock_movements",

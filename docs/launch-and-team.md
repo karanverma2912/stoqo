@@ -22,7 +22,7 @@ Camera, barcode photo, keyboard/USB scanner and manual entry use the same exact 
 
 A normal retail barcode is an identifier, not an embedded product catalogue. Product details come from saved inventory. External catalogue autofill is not connected and cannot guarantee data for arbitrary products; purchase price, store selling price and available stock must be supplied by the business.
 
-`products.size` and `products.color` are optional structured columns. Each sellable size/colour is its own stock item with independent SKU, barcode and ledger. Example: Tee / Black / M and Tee / Black / L. Display names combine the base name and options without modifying the base name. Do not reuse a barcode between variants within the same store. Full parent/child product-family management can be added later without merging stock ledgers.
+`products.size` and `products.color` are optional structured columns. Each sellable size/colour is its own stock item with independent SKU, barcode and ledger. Example: Tee / Black / M and Tee / Black / L. Display names combine the base name and options without modifying the base name. Do not reuse a barcode between variants within the same store. Inventory → Sizes & labels now groups these items into product families, supports bulk variant creation and prints internal barcode labels. See product-setup.md.
 
 ## Android
 

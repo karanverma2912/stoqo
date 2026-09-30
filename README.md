@@ -69,6 +69,6 @@ Tests need a PostgreSQL test database. CI supplies one. Test credentials default
 
 Use `frontend/` as the Vercel root and set server-only `API_URL` to the Rails HTTPS origin. Run Rails and Sidekiq as separate services sharing PostgreSQL, Redis and object storage. See [deployment instructions](docs/deployment.md), [architecture](docs/architecture.md) and [API contract](docs/api.md).
 
-Payments, team invitations, variants, email/password recovery and full offline synchronization are intentionally deferred. Prices are stored as proposed plans, not an active checkout offering. No production services are provisioned by this repository.
+Payments, email/password recovery and full offline synchronization are deferred. Team invitation links, product groups with size/colour variants, barcode label printing and multi-item checkout are implemented; see docs/launch-and-team.md, docs/product-setup.md and docs/checkout.md. Prices are stored as proposed plans, not an active checkout offering. No production services are provisioned by this repository.
 
 See [verification record](docs/verification.md) for executed checks and outstanding gates.

@@ -1,9 +1,12 @@
 class Product < ApplicationRecord
   belongs_to :business
+  belongs_to :product_group, optional: true
   belongs_to :category, optional: true
   has_many :stock_movements
   has_one_attached :image
   before_validation { self.sku = sku.presence; self.barcode = barcode.presence }
+  before_validation { self.size = size.to_s.strip.presence; self.color = color.to_s.strip.presence }
+  validate :valid_group_variant
   validates :size, :color, length: {maximum: 60}
   def display_name = [name, color, size].compact_blank.join(" · ")
   validates :name, presence: true, length: {maximum: 200}
@@ -20,6 +23,13 @@ class Product < ApplicationRecord
     current_stock.zero? ? "out" : (current_stock <= low_stock_threshold ? "low" : "healthy")
   end
   private
+  def valid_group_variant
+    return unless product_group
+    errors.add(:product_group, "must belong to this business") if product_group.business_id != business_id
+    duplicate = product_group.products.where("lower(COALESCE(size, '')) = ? AND lower(COALESCE(color, '')) = ?", size.to_s.downcase, color.to_s.downcase)
+    duplicate = duplicate.where.not(id: id) if persisted?
+    errors.add(:base, "This size and colour already exist in the group") if duplicate.exists?
+  end
   def category_belongs_to_business
     errors.add(:category, "must belong to this business") if category && category.business_id != business_id
   end

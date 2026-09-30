@@ -22,6 +22,7 @@ export type Product = {
   low_stock_threshold: string;
   unit: string;
   stock_status: "healthy" | "low" | "out";
+  product_group_id?: number;
   category_id?: number;
   category_name?: string;
   image_url?: string;

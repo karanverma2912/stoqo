@@ -90,6 +90,31 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
   await page.getByLabel("Checkout language").selectOption("hi");
   await expect(page.getByRole("heading", {name: "अब बिल बनाना आसान।"})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
+  await page.goto("/app/product-setup");
+  await page.getByRole("button", {name: "Create product group", exact: true}).first().click();
+  await page.getByLabel("Product group name", {exact: true}).fill("Classic Tee");
+  await page.getByLabel("Sizes", {exact: true}).fill("M, L");
+  await page.getByLabel("Colours", {exact: true}).fill("Black, White");
+  await page.getByLabel("Variant selling price").fill("499");
+  await page.getByLabel("Variant opening stock").fill("5");
+  await page.getByRole("button", {name: "Preview combinations"}).click();
+  await page.getByRole("button", {name: "Create 4 variants", exact: true}).click();
+  await expect(page.locator(".setup-variant-list>div")).toHaveCount(4);
+  await page.getByRole("button", {name: "Print group labels"}).click();
+  await expect(page.locator(".barcode-label")).toHaveCount(4);
+  await expect(page.locator(".barcode-label svg rect").first()).toBeAttached();
+  const svg = await page.locator(".barcode-label svg").first().evaluate(el=>new XMLSerializer().serializeToString(el));
+  await page.getByRole("button", {name:"Close",exact:true}).last().click();
+  await page.getByRole("button", {name:"Close",exact:true}).last().click();
+  await page.goto("/app/checkout");
+  await page.getByLabel("Checkout language").selectOption("en");
+  await page.getByRole("button", {name:"Scan barcode",exact:true}).click();
+  await page.getByLabel("Scan a photo").setInputFiles({name:'internal.svg',mimeType:'image/svg+xml',buffer:Buffer.from(svg)});
+  await expect(page.locator(".checkout-line")).toHaveCount(1);
+  await expect(page.getByLabel("Scan a photo")).toBeEnabled();
+  await page.getByLabel("Scan a photo").setInputFiles({name:'internal.svg',mimeType:'image/svg+xml',buffer:Buffer.from(svg)});
+  await expect(page.getByLabel("Quantity Classic Tee", {exact:true})).toHaveValue("2");
+  await page.getByRole("button", {name:"Close",exact:true}).last().click();
   await page.screenshot({
     path: "test-results/inventory-mobile.png",
     fullPage: true,

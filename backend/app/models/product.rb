@@ -4,7 +4,7 @@ class Product < ApplicationRecord
   belongs_to :category, optional: true
   has_many :stock_movements
   has_one_attached :image
-  before_validation { self.sku = sku.presence; self.barcode = barcode.presence }
+  before_validation { self.sku = sku.to_s.strip.presence; self.barcode = barcode.to_s.strip.presence }
   before_validation { self.size = size.to_s.strip.presence; self.color = color.to_s.strip.presence }
   validate :valid_group_variant
   validates :size, :color, length: {maximum: 60}

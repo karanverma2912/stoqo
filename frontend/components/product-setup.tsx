@@ -17,13 +17,14 @@ import {
   LoaderCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { api, ApiError, money, units } from "@/lib/api";
+import { api, ApiError, units } from "@/lib/api";
 import type { Business, Product } from "@/lib/types";
 import {
   variantMatrix,
   type ProductGroup,
   type VariantDraft,
 } from "@/lib/product-setup";
+import { billMoney } from "@/lib/sales";
 import { Sheet } from "./ui/sheet";
 const Labels = dynamic(() => import("./barcode-labels"), { ssr: false });
 type SetupPayload = {
@@ -229,7 +230,7 @@ export function ProductSetup({
                           {units(p.current_stock)} {p.unit}
                         </strong>
                         <small>
-                          {money(p.selling_price, business.currency)}
+                          {billMoney(p.selling_price, business.currency)}
                         </small>
                       </span>
                     </div>

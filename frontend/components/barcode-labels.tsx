@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 import { Printer, LoaderCircle, WandSparkles } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, money } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { Business, Product } from "@/lib/types";
+import { billMoney } from "@/lib/sales";
 import { Sheet } from "./ui/sheet";
 function printable(code?: string) {
   return !!code && (/^[\x20-\x7e]{1,16}$/.test(code)||/^\d{1,32}$/.test(code));
@@ -163,7 +164,7 @@ export default function BarcodeLabels({
               <div className="barcode-label" key={`${p.id}-${i}`}>
                 <strong>{p.display_name || p.name}</strong>
                 {showPrice && (
-                  <span>{money(p.selling_price, business.currency)}</span>
+                  <span>{billMoney(p.selling_price, business.currency)}</span>
                 )}
                 <Barcode value={p.barcode!} />
               </div>

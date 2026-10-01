@@ -1,4 +1,5 @@
 "use client";
+import { AccountSecurity } from "./account-security";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -1316,7 +1317,7 @@ function SettingsView({
 
   return (
     <div className="settings">
-      <form
+      {["owner", "admin"].includes(business.role || "") ? <form
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
@@ -1347,7 +1348,7 @@ function SettingsView({
         <button className="button primary" disabled={busy}>
           Save changes
         </button>
-      </form>
+      </form> : <p className="muted">Workspace: {business.name}. Ask an owner or admin to edit business details.</p>}
       <label>
         Appearance
         <select value={theme} onChange={(e) => setTheme(e.target.value)}>
@@ -1357,6 +1358,7 @@ function SettingsView({
         </select>
       </label>
       {["owner", "admin"].includes(business.role || "") && <Team businessId={business.id} />}
+      <AccountSecurity />
       <Link className="button subtle full" href="/app/subscription" onClick={onNavigate}>Plans & usage</Link>
       <button
         className="button subtle full"

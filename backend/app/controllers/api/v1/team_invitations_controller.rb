@@ -5,7 +5,9 @@ class Api::V1::TeamInvitationsController < ApplicationController
     token = SecureRandom.urlsafe_base64(32)
     invitation = nil
     current_business.with_lock do
+      actor = management_actor!
       attributes = params.require(:invitation).permit(:email, :role)
+      raise Pundit::NotAuthorizedError if attributes[:role] == "admin" && actor.role != "owner"
       email = attributes[:email].to_s.strip.downcase
       raise ArgumentError, "This email is already on your team" if current_business.business_memberships.joins(:user).exists?(users: {email: email})
       raise ArgumentError, "An invitation is already pending for this email" if current_business.team_invitations.pending.exists?(email: email)
@@ -19,7 +21,11 @@ class Api::V1::TeamInvitationsController < ApplicationController
   def destroy
     authorize current_business, :manage?, policy_class: BusinessPolicy
     current_business.with_lock do
-      current_business.team_invitations.pending.find(params[:id]).update!(revoked_at: Time.current)
+      actor = management_actor!
+      invitation = current_business.team_invitations.pending.find(params[:id])
+      raise Pundit::NotAuthorizedError if invitation.role == "admin" && actor.role != "owner"
+      invitation.update!(revoked_at: Time.current)
+      current_business.activities.create!(user: current_user, action: "invitation_revoked", subject_name: invitation.email)
     end
     data({revoked: true})
   end
@@ -37,5 +43,12 @@ class Api::V1::TeamInvitationsController < ApplicationController
       business.activities.create!(user: current_user, action: "employee_joined", subject_name: current_user.name)
     end
     data({business_id: business.id})
+  end
+  private
+
+  def management_actor!
+    actor = current_business.business_memberships.find_by!(user: current_user)
+    raise Pundit::NotAuthorizedError unless %w[owner admin].include?(actor.role)
+    actor
   end
 end

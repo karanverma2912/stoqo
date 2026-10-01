@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +22,7 @@ import { toast } from "sonner";
 import { api, ApiError, units } from "@/lib/api";
 import type { Product, Business } from "@/lib/types";
 import { billMoney, lineCents, type Sale } from "@/lib/sales";
+import { useLanguage } from "./language-provider";
 import { checkoutCopy, type CheckoutLanguage } from "@/lib/checkout-copy";
 import { Sheet } from "./ui/sheet";
 import { ProductForm } from "./workspace-forms";
@@ -41,8 +43,8 @@ export function Checkout({
   business: Business;
   userId: number;
 }) {
-  const [lang, setLang] = useState<CheckoutLanguage>("en"),
-    [tab, setTab] = useState<"checkout" | "history">("checkout"),
+  const { tr, language: lang } = useLanguage();
+  const [tab, setTab] = useState<"checkout" | "history">("checkout"),
     [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
     [cart, setCart] = useState<Line[]>([]),
@@ -64,13 +66,11 @@ export function Checkout({
     manager = business.role !== "staff",
     pendingKey = `stoqo-checkout-pending:${userId}:${business.id}`;
   useEffect(() => {
-    const l = localStorage.getItem("stoqo-language");
-    if (l === "hi") setLang(l);
     try {
       const p = sessionStorage.getItem(pendingKey);
       if (p) {
         setPending(JSON.parse(p));
-        setError(checkoutCopy[l === "hi" ? "hi" : "en"].pending);
+        setError(checkoutCopy.en.pending);
       }
     } catch {}
   }, [pendingKey]);
@@ -199,25 +199,10 @@ export function Checkout({
     <div className="checkout-page" lang={lang}>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">STOQO COUNTER</span>
+          <span className="eyebrow">{tr("STOQO COUNTER")}</span>
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
         </div>
-        <label className="checkout-language">
-          <span className="sr-only">{t.language}</span>
-          <select
-            aria-label="Checkout language"
-            value={lang}
-            onChange={(e) => {
-              const l = e.target.value as CheckoutLanguage;
-              setLang(l);
-              localStorage.setItem("stoqo-language", l);
-            }}
-          >
-            <option value="en">English</option>
-            <option value="hi">हिन्दी</option>
-          </select>
-        </label>
       </div>
       <div className="checkout-tabs" role="tablist" aria-label={t.checkout}>
         <button
@@ -242,7 +227,7 @@ export function Checkout({
       </div>
       {error && (
         <div className="error-box" role="alert">
-          {error}
+          {tr(error)}
           {pending && (
             <button className="button primary" disabled={busy} onClick={save}>
               {t.retry}
@@ -278,7 +263,7 @@ export function Checkout({
                     await lookup(code);
                     f.reset();
                   } catch (e) {
-                    toast.error((e as Error).message);
+                    toast.error(tr((e as Error).message));
                   }
                 }}
               >
@@ -310,7 +295,7 @@ export function Checkout({
             {products.isPending ? (
               <p className="muted">{t.loading}</p>
             ) : products.error ? (
-              <p className="error-box">{products.error.message}</p>
+              <p className="error-box">{tr(products.error.message)}</p>
             ) : (
               <div className="checkout-product-grid">
                 {products.data.data.map((p) => (
@@ -618,7 +603,7 @@ export function Checkout({
         </p>
         {error && (
           <p role="alert" className="error-box">
-            {error}
+            {tr(error)}
           </p>
         )}
         <button className="button primary full" disabled={busy} onClick={save}>
@@ -654,6 +639,7 @@ function BillHistory({
   lang: CheckoutLanguage;
   onSelect: (s: Sale) => void;
 }) {
+  const { tr } = useLanguage();
   const [page, setPage] = useState(1),
     [search, setSearch] = useState(""),
     t = checkoutCopy[lang];
@@ -686,7 +672,7 @@ function BillHistory({
       {bills.isPending ? (
         <p>{t.loading}</p>
       ) : bills.error ? (
-        <p role="alert">{bills.error.message}</p>
+        <p role="alert">{tr(bills.error.message)}</p>
       ) : bills.data.data.length ? (
         bills.data.data.map((s) => (
           <button
@@ -754,6 +740,7 @@ export function BillDetail({
   onClose: () => void;
   onUpdate: (s: Sale) => void;
 }) {
+  const { tr } = useLanguage();
   const t = checkoutCopy[lang],
     client = useQueryClient(),
     [returning, setReturning] = useState(false),
@@ -784,7 +771,7 @@ export function BillDetail({
     const text = [
       sale.business_name,
       `${t.bill}: ${sale.number}`,
-      `${t.date}: ${new Date(sale.created_at).toLocaleString()}`,
+      `${t.date}: ${new Date(sale.created_at).toLocaleString(lang === "hi" ? "hi-IN" : "en-IN")}`,
       ...sale.items.map(
         (i) =>
           `${i.name} × ${i.quantity}: ${billMoney(i.line_total, sale.currency, lang)}`,
@@ -802,7 +789,8 @@ export function BillDetail({
         toast.success(t.copied);
       }
     } catch (e) {
-      if ((e as Error).name !== "AbortError") toast.error((e as Error).message);
+      if ((e as Error).name !== "AbortError")
+        toast.error(tr((e as Error).message));
     }
   }
   return (
@@ -913,7 +901,9 @@ export function BillDetail({
           <p>{r.reason}</p>
           <small>
             {t.returnedBy} {r.user_name} ·{" "}
-            {new Date(r.created_at).toLocaleString()}
+            {new Date(r.created_at).toLocaleString(
+              lang === "hi" ? "hi-IN" : "en-IN",
+            )}
           </small>
         </div>
       ))}
@@ -1010,7 +1000,7 @@ export function BillDetail({
           </label>
           {error && (
             <p role="alert" className="error-box">
-              {error}
+              {tr(error)}
             </p>
           )}
           <button

@@ -1,3 +1,6 @@
+"use client";
+
+import { useLanguage } from "@/components/language-provider";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -9,6 +12,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 export default function Landing() {
+  const { tr } = useLanguage();
   return (
     <div className="landing">
       <header className="landing-nav">
@@ -19,10 +23,11 @@ export default function Landing() {
           stoqo<span className="brand-dot">.</span>
         </Link>
         <nav>
-          <a href="#how">How it works</a>
-          <Link href="/login">Log in</Link>
+          <a href="#how">{tr("How it works")}</a>
+          <Link href="/login">{tr("Log in")}</Link>
           <Link className="button dark-button" href="/signup">
-            Start your free trial <ArrowUpRight size={17} />
+            {tr("Start your free trial")}
+            <ArrowUpRight size={17} />
           </Link>
         </nav>
       </header>
@@ -30,24 +35,26 @@ export default function Landing() {
         <div className="hero">
           <section>
             <span className="eyebrow">
-              <span className="tiny-dot" /> BIG IDEAS. SMALL BUSINESSES.
+              <span className="tiny-dot" /> {tr("BIG IDEAS. SMALL BUSINESSES.")}
             </span>
             <h1>
-              Your stock.
+              {tr("Your stock.")}
               <br />
-              In a <span>good place.</span>
+              {tr("In a")}
+              <span>{tr("good place.")}</span>
             </h1>
             <p>
-              Less counting. Less guessing. More growing.
+              {tr("Less counting. Less guessing. More growing.")}
               <br />
-              Meet the refreshingly simple home for your inventory.
+              {tr("Meet the refreshingly simple home for your inventory.")}
             </p>
             <Link href="/signup" className="button primary big">
-              Let’s get you stocked <ArrowUpRight size={21} />
+              {tr("Let’s get you stocked")}
+              <ArrowUpRight size={21} />
             </Link>
             <div className="hero-note">
-              <Check size={15} /> No card required <span>·</span> Made for your
-              phone
+              <Check size={15} /> {tr("No card required")}
+              <span>·</span> {tr("Made for your phone")}
             </div>
           </section>
           <section
@@ -56,25 +63,27 @@ export default function Landing() {
           >
             <div className="preview-top">
               <span className="wordmark">stoqo.</span>
-              <span className="pill">A little peace of mind</span>
+              <span className="pill">{tr("A little peace of mind")}</span>
             </div>
-            <div className="preview-greeting">Your shelves, at a glance</div>
+            <div className="preview-greeting">
+              {tr("Your shelves, at a glance")}
+            </div>
             <div className="preview-number">
-              All stocked up.
+              {tr("All stocked up.")}
               <PackageCheck size={35} />
             </div>
             <div className="preview-cards">
               <div>
-                <span>STOCK IN</span>
+                <span>{tr("STOCK IN")}</span>
                 <strong>
-                  +24 <small>units</small>
+                  +24 <small>{tr("units")}</small>
                 </strong>
                 <ArrowDownLeft />
               </div>
               <div>
-                <span>READY TO SELL</span>
+                <span>{tr("READY TO SELL")}</span>
                 <strong>
-                  148 <small>units</small>
+                  148 <small>{tr("units")}</small>
                 </strong>
                 <Boxes />
               </div>
@@ -82,52 +91,61 @@ export default function Landing() {
             <div className="preview-item">
               <span className="product-avatar">OT</span>
               <div>
-                <strong>Everyday oversized tee</strong>
-                <small>Black / Medium</small>
+                <strong>{tr("Everyday oversized tee")}</strong>
+                <small>{tr("Black / Medium")}</small>
               </div>
-              <span className="status healthy">Healthy stock</span>
+              <span className="status healthy">{tr("Healthy stock")}</span>
             </div>
             <div className="preview-item">
               <span className="product-avatar blue">CB</span>
               <div>
-                <strong>Canvas carry-all</strong>
-                <small>Natural / One size</small>
+                <strong>{tr("Canvas carry-all")}</strong>
+                <small>{tr("Natural / One size")}</small>
               </div>
-              <span className="status low">Running low</span>
+              <span className="status low">{tr("Running low")}</span>
             </div>
             <div className="preview-foot">
-              <ScanLine size={18} /> Scan it. Stock it. Sorted.
-              <span>EXAMPLE WORKSPACE</span>
+              <ScanLine size={18} /> {tr("Scan it. Stock it. Sorted.")}
+              <span>{tr("EXAMPLE WORKSPACE")}</span>
             </div>
           </section>
         </div>
         <section id="how" className="landing-features">
           <div>
-            <span>01 / MAKE IT YOURS</span>
-            <h2>Your business. Your space.</h2>
-            <p>Create your account and name your business. That’s the setup.</p>
-          </div>
-          <div>
-            <span>02 / ADD YOUR FIRST</span>
-            <h2>A name is all you need.</h2>
+            <span>{tr("01 / MAKE IT YOURS")}</span>
+            <h2>{tr("Your business. Your space.")}</h2>
             <p>
-              Add a product and its opening stock. The extra details can wait.
+              {tr(
+                "Create your account and name your business. That’s the setup.",
+              )}
             </p>
           </div>
           <div>
-            <span>03 / GET ON WITH IT</span>
-            <h2>Every move, remembered.</h2>
+            <span>{tr("02 / ADD YOUR FIRST")}</span>
+            <h2>{tr("A name is all you need.")}</h2>
             <p>
-              Stock in, stock out, and a clear history. Know where you stand.
+              {tr(
+                "Add a product and its opening stock. The extra details can wait.",
+              )}
+            </p>
+          </div>
+          <div>
+            <span>{tr("03 / GET ON WITH IT")}</span>
+            <h2>{tr("Every move, remembered.")}</h2>
+            <p>
+              {tr(
+                "Stock in, stock out, and a clear history. Know where you stand.",
+              )}
             </p>
           </div>
         </section>
       </main>
       <footer>
         <span className="wordmark">stoqo.</span>
-        <span>A little less stock stress.</span>
+        <span>{tr("A little less stock stress.")}</span>
         <Link href="/signup">
-          Make room for better <ArrowRight size={16} />
+          {tr("Make room for better")}
+          <ArrowRight size={16} />
         </Link>
       </footer>
     </div>

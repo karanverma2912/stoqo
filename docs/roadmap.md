@@ -12,3 +12,5 @@ Update, 1 October 2026: focus on repository improvements and laptop testing. Dep
 6. Prepare mobile for customers — release signing, installation, physical-device camera/printing checks and distribution.
 
 Broad launch testing and infrastructure work remain later in the sequence. Each implemented feature still gets focused stock-integrity and authorization checks.
+
+App-wide English/Hindi is now configured in Settings; see languages.md. Proposed product improvements and scaling sequence: product-priorities.md.

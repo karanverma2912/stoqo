@@ -1,4 +1,7 @@
 "use client";
+
+import { useLanguage } from "@/components/language-provider";
+
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -25,18 +28,21 @@ export function useSubscription(id: number, page = 1) {
     refetchInterval: 60000,
   });
 }
-function statusText(s: Subscription) {
+function statusText(s: Subscription, tr: ReturnType<typeof useLanguage>["tr"]) {
   return s.status === "trial"
-    ? `${s.days_remaining} days left in your trial`
+    ? tr("{count} days left in your trial", { count: s.days_remaining ?? 0 })
     : s.status === "active"
       ? s.days_remaining !== null && s.days_remaining <= 7
-        ? `${s.days_remaining} days of paid access remaining`
-        : "Your plan is active"
+        ? tr("{count} days of paid access remaining", {
+            count: s.days_remaining ?? 0,
+          })
+        : tr("Your plan is active")
       : s.status === "expired"
-        ? "Your subscription has ended"
-        : "Your workspace is read-only";
+        ? tr("Your subscription has ended")
+        : tr("Your workspace is read-only");
 }
 export function SubscriptionNotice({ business }: { business: Business }) {
+  const { tr, language } = useLanguage();
   const q = useSubscription(business.id);
   const s = q.data?.data;
   if (!s || (s.writable && (s.days_remaining === null || s.days_remaining > 7)))
@@ -44,21 +50,25 @@ export function SubscriptionNotice({ business }: { business: Business }) {
   return (
     <aside
       className={`subscription-notice ${s.writable ? "" : "subscription-readonly"}`}
-      aria-label="Subscription status"
+      aria-label={tr("Subscription status")}
     >
       <Clock3 size={19} />
       <div>
-        <strong>{statusText(s)}</strong>
+        <strong>{statusText(s, tr)}</strong>
         <p>
           {s.writable
-            ? "Review your plan before access expires."
+            ? tr("Review your plan before access expires.")
             : s.can_manage
-              ? "Your records are safe. Viewing and export remain available; adding products, billing and stock changes are paused."
-              : "You can still view your records. Ask the owner to renew before adding products or changing stock."}
+              ? tr(
+                  "Your records are safe. Viewing and export remain available; adding products, billing and stock changes are paused.",
+                )
+              : tr(
+                  "You can still view your records. Ask the owner to renew before adding products or changing stock.",
+                )}
         </p>
       </div>
       <Link className="button subtle" href="/app/subscription">
-        {s.can_manage ? "Review plan" : "Plan details"}
+        {s.can_manage ? tr("Review plan") : tr("Plan details")}
       </Link>
     </aside>
   );
@@ -76,6 +86,7 @@ function Usage({
   detail: string;
   icon: typeof Users;
 }) {
+  const { tr, language } = useLanguage();
   return (
     <div className="subscription-usage">
       <span>
@@ -96,14 +107,15 @@ function Usage({
       <p>{detail}</p>
       {limit !== null && used >= limit && (
         <small className="setup-warning">
-          {used > limit ? "Above your plan limit" : "Limit reached"} · existing
-          records are kept.
+          {used > limit ? tr("Above your plan limit") : tr("Limit reached")}{" "}
+          {tr("· existing records are kept.")}
         </small>
       )}
     </div>
   );
 }
 export function SubscriptionPage({ business }: { business: Business }) {
+  const { tr, language } = useLanguage();
   const [page, setPage] = useState(1),
     [selected, setSelected] = useState<Plan>(),
     [busy, setBusy] = useState(false),
@@ -128,7 +140,7 @@ export function SubscriptionPage({ business }: { business: Business }) {
         queryKey: ["subscription", business.id],
       });
       setSelected(undefined);
-      toast.success("Plan request saved. No payment taken.");
+      toast.success(tr("Plan request saved. No payment taken."));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -151,7 +163,7 @@ export function SubscriptionPage({ business }: { business: Business }) {
         queryKey: ["subscription", business.id],
       });
       setCancel(false);
-      toast.success("Request cancelled. Your current plan is unchanged.");
+      toast.success(tr("Request cancelled. Your current plan is unchanged."));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -160,19 +172,19 @@ export function SubscriptionPage({ business }: { business: Business }) {
     }
   }
   const date = (d: string) =>
-    new Date(d).toLocaleDateString("en-IN", {
+    new Date(d).toLocaleDateString(language === "hi" ? "hi-IN" : "en-IN", {
       timeZone: business.timezone,
       day: "numeric",
       month: "short",
       year: "numeric",
     });
-  if (q.isPending) return <p>Loading plans and usage…</p>;
+  if (q.isPending) return <p>{tr("Loading plans and usage…")}</p>;
   if (q.error || !s)
     return (
       <div role="alert" className="error-box">
-        {q.error?.message || "Unable to load subscription"}
+        {tr(q.error?.message || "Unable to load subscription")}
         <button className="button subtle" onClick={() => q.refetch()}>
-          Try again
+          {tr("Try again")}
         </button>
       </div>
     );
@@ -181,36 +193,44 @@ export function SubscriptionPage({ business }: { business: Business }) {
     <div className="subscription-page">
       <Link href="/app" className="text-link">
         <ChevronLeft size={16} />
-        Overview
+        {tr("Overview")}
       </Link>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">ROOM FOR YOUR BUSINESS</span>
+          <span className="eyebrow">{tr("ROOM FOR YOUR BUSINESS")}</span>
           <h1>
-            Plans & usage<span className="accent-period">.</span>
+            {tr("Plans & usage")}
+            <span className="accent-period">.</span>
           </h1>
-          <p>A clear view of your access, team and next step.</p>
+          <p>{tr("A clear view of your access, team and next step.")}</p>
         </div>
         <span className="subscription-status">
           <span className="tiny-dot" />
           {s.status === "trial"
-            ? "Free trial"
+            ? tr("Free trial")
             : s.status === "active"
-              ? "Active"
-              : "Read-only"}
+              ? tr("Active")
+              : tr("Read-only")}
         </span>
       </div>
       <section className="subscription-current">
         <div>
-          <span className="eyebrow">CURRENT PLAN</span>
+          <span className="eyebrow">{tr("CURRENT PLAN")}</span>
           <h2>{s.current_plan.name}</h2>
-          <p>{statusText(s)}</p>
+          <p>{statusText(s, tr)}</p>
           <small>
             {s.billing_status === "trial"
-              ? `Trial ${s.writable ? "ends" : "ended"} ${date(s.trial_ends_at)}. No automatic charge.`
+              ? tr(
+                  s.writable
+                    ? "Trial ends {date}. No automatic charge."
+                    : "Trial ended {date}. No automatic charge.",
+                  { date: date(s.trial_ends_at) },
+                )
               : s.subscription_ends_at
-                ? `Paid access ends ${date(s.subscription_ends_at)}. No automatic renewal.`
-                : "No paid-through date is set."}
+                ? tr("Paid access ends {date}. No automatic renewal.", {
+                    date: date(s.subscription_ends_at),
+                  })
+                : tr("No paid-through date is set.")}
           </small>
         </div>
         <div className="subscription-current-price">
@@ -220,19 +240,22 @@ export function SubscriptionPage({ business }: { business: Business }) {
               s.current_plan.currency,
             )}
           </strong>
-          <span>/ month · plan price</span>
+          <span>{tr("/ month · plan price")}</span>
         </div>
       </section>
       <div className="subscription-usage-grid">
         <Usage
-          label="Team seats"
+          label={tr("Team seats")}
           used={seats}
           limit={s.current_plan.member_limit}
-          detail={`${s.usage.members} members, including the owner · ${s.usage.pending_invitations} pending invitations`}
+          detail={tr(
+            "{members} members, including the owner · {pending} pending invitations",
+            { members: s.usage.members, pending: s.usage.pending_invitations },
+          )}
           icon={Users}
         />
         <Usage
-          label="Saved products"
+          label={tr("Saved products")}
           used={s.usage.products}
           limit={s.current_plan.product_limit}
           detail="Each variant counts as one product. Archived products are included."
@@ -241,28 +264,31 @@ export function SubscriptionPage({ business }: { business: Business }) {
       </div>
       {!s.writable && (
         <p className="subscription-access-note">
-          Viewing remains available. Product creation, sales and stock changes
-          resume after activation. Export is available to roles with report
-          access.
+          {tr(
+            "Viewing remains available. Product creation, sales and stock changes resume after activation. Export is available to roles with report access.",
+          )}
         </p>
       )}
       {s.pending_request && (
         <section className="subscription-pending">
           <Clock3 size={22} />
           <div>
-            <strong>{s.pending_request.plan_name} request pending</strong>
+            <strong>
+              {s.pending_request.plan_name} {tr("request pending")}
+            </strong>
             <p>
-              Request #{s.pending_request.id} ·{" "}
+              {tr("Request #")} {s.pending_request.id} ·{" "}
               {date(s.pending_request.created_at)} ·{" "}
               {billMoney(
                 s.pending_request.monthly_price_paise / 100,
                 s.pending_request.currency,
               )}
-              /month
+              {tr("/month")}
             </p>
             <small>
-              No payment has been collected and your current access has not
-              changed.
+              {tr(
+                "No payment has been collected and your current access has not changed.",
+              )}
             </small>
           </div>
           <button
@@ -272,16 +298,18 @@ export function SubscriptionPage({ business }: { business: Business }) {
               setCancel(true);
             }}
           >
-            Cancel request
+            {tr("Cancel request")}
           </button>
         </section>
       )}
       <div className="subscription-section-title">
-        <h2>Choose your next plan</h2>
+        <h2>{tr("Choose your next plan")}</h2>
         <p>
           {s.can_manage
-            ? "Requests are saved for manual review. Online payment collection is not connected yet."
-            : "Only the owner or an admin can request or change plans."}
+            ? tr(
+                "Requests are saved for manual review. Online payment collection is not connected yet.",
+              )
+            : tr("Only the owner or an admin can request or change plans.")}
         </p>
       </div>
       <div className="subscription-plans">
@@ -293,34 +321,34 @@ export function SubscriptionPage({ business }: { business: Business }) {
           >
             <div className="subscription-plan-name">
               <h3>{plan.name}</h3>
-              {plan.id === s.current_plan.id && <span>Current</span>}
+              {plan.id === s.current_plan.id && <span>{tr("Current")}</span>}
             </div>
             <strong className="subscription-plan-price">
               {billMoney(plan.monthly_price_paise / 100, plan.currency)}
-              <small>/month</small>
+              <small>{tr("/month")}</small>
             </strong>
             <ul>
               <li>
                 <Check size={17} />
-                {plan.member_limit} users, including owner
+                {plan.member_limit} {tr("users, including owner")}
               </li>
               <li>
                 <Check size={17} />
                 {plan.product_limit
-                  ? `${plan.product_limit} saved products`
-                  : "Unlimited saved products"}
+                  ? tr("{count} saved products", { count: plan.product_limit })
+                  : tr("Unlimited saved products")}
               </li>
               <li>
                 <Check size={17} />
-                Stock, checkout and saved bills
+                {tr("Stock, checkout and saved bills")}
               </li>
               <li>
                 <Check size={17} />
-                Variants and barcode labels
+                {tr("Variants and barcode labels")}
               </li>
             </ul>
             {plan.capacity_error && (
-              <p className="setup-warning">{plan.capacity_error}</p>
+              <p className="setup-warning">{tr(plan.capacity_error || "")}</p>
             )}
             <button
               className="button primary full"
@@ -333,24 +361,25 @@ export function SubscriptionPage({ business }: { business: Business }) {
               }}
             >
               {s.pending_request?.subscription_plan_id === plan.id
-                ? "Request pending"
+                ? tr("Request pending")
                 : plan.id === s.current_plan.id
                   ? s.status === "trial"
-                    ? "Request this plan"
-                    : "Request renewal"
-                  : "Request plan"}
+                    ? tr("Request this plan")
+                    : tr("Request renewal")
+                  : tr("Request plan")}
             </button>
           </motion.section>
         ))}
       </div>
       <p className="subscription-fineprint">
         <ShieldCheck size={17} />
-        Your data is kept when access expires. A plan request is not a payment
-        or tax invoice. Limits and trial duration are configured by Stoqo.
+        {tr(
+          "Your data is kept when access expires. A plan request is not a payment or tax invoice. Limits and trial duration are configured by Stoqo.",
+        )}
       </p>
       {s.can_manage && (
         <section className="subscription-history">
-          <h2>Request history</h2>
+          <h2>{tr("Request history")}</h2>
           {s.requests.length ? (
             s.requests.map((r) => (
               <div className="subscription-history-row" key={r.id}>
@@ -363,16 +392,18 @@ export function SubscriptionPage({ business }: { business: Business }) {
                 <span>
                   {billMoney(r.monthly_price_paise / 100, r.currency)}
                   <small>
-                    {r.status}
+                    {tr(r.status)}
                     {r.activated_until
-                      ? ` · active until ${date(r.activated_until)}`
+                      ? tr(" · active until {date}", {
+                          date: date(r.activated_until),
+                        })
                       : ""}
                   </small>
                 </span>
               </div>
             ))
           ) : (
-            <p className="muted">No plan requests yet.</p>
+            <p className="muted">{tr("No plan requests yet.")}</p>
           )}
           <div className="checkout-pagination">
             <button
@@ -380,7 +411,7 @@ export function SubscriptionPage({ business }: { business: Business }) {
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
             >
-              Previous
+              {tr("Previous")}
             </button>
             <span>{page}</span>
             <button
@@ -388,7 +419,7 @@ export function SubscriptionPage({ business }: { business: Business }) {
               disabled={page >= (q.data?.meta.pages || 1)}
               onClick={() => setPage((p) => p + 1)}
             >
-              Next
+              {tr("Next")}
             </button>
           </div>
         </section>
@@ -398,7 +429,11 @@ export function SubscriptionPage({ business }: { business: Business }) {
         onClose={() => {
           if (!busy) setSelected(undefined);
         }}
-        title={selected ? `Request ${selected.name}` : "Request plan"}
+        title={
+          selected
+            ? tr("Request {plan}", { plan: selected.name })
+            : tr("Request plan")
+        }
       >
         <p>
           {selected &&
@@ -406,16 +441,16 @@ export function SubscriptionPage({ business }: { business: Business }) {
               selected.monthly_price_paise / 100,
               selected.currency,
             )}{" "}
-          per month
+          {tr("per month")}
         </p>
         <p className="muted">
-          This saves a request for the Stoqo operator to review. It does not
-          take payment, send an email or change your current limits. Paid access
-          begins only after payment is verified and activation is approved.
+          {tr(
+            "This saves a request for the Stoqo operator to review. It does not take payment, send an email or change your current limits. Paid access begins only after payment is verified and activation is approved.",
+          )}
         </p>
         {error && (
           <p className="error-box" role="alert">
-            {error}
+            {tr(error)}
           </p>
         )}
         <button
@@ -428,7 +463,7 @@ export function SubscriptionPage({ business }: { business: Business }) {
           ) : (
             <Check size={18} />
           )}
-          Save plan request
+          {tr("Save plan request")}
         </button>
       </Sheet>
       <Sheet
@@ -436,15 +471,16 @@ export function SubscriptionPage({ business }: { business: Business }) {
         onClose={() => {
           if (!busy) setCancel(false);
         }}
-        title="Cancel this request?"
+        title={tr("Cancel this request?")}
       >
         <p>
-          Your current subscription stays as it is. You can submit another
-          request afterwards.
+          {tr(
+            "Your current subscription stays as it is. You can submit another request afterwards.",
+          )}
         </p>
         {error && (
           <p role="alert" className="error-box">
-            {error}
+            {tr(error)}
           </p>
         )}
         <button
@@ -452,7 +488,7 @@ export function SubscriptionPage({ business }: { business: Business }) {
           disabled={busy}
           onClick={cancelRequest}
         >
-          {busy ? "Cancelling…" : "Confirm cancellation"}
+          {busy ? tr("Cancelling…") : tr("Confirm cancellation")}
         </button>
       </Sheet>
     </div>

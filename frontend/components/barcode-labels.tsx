@@ -1,4 +1,6 @@
 "use client";
+import { useLanguage } from "@/components/language-provider";
+
 import { useEffect, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 import { Printer, LoaderCircle, WandSparkles } from "lucide-react";
@@ -8,9 +10,12 @@ import type { Business, Product } from "@/lib/types";
 import { billMoney } from "@/lib/sales";
 import { Sheet } from "./ui/sheet";
 function printable(code?: string) {
-  return !!code && (/^[\x20-\x7e]{1,16}$/.test(code)||/^\d{1,32}$/.test(code));
+  return (
+    !!code && (/^[\x20-\x7e]{1,16}$/.test(code) || /^\d{1,32}$/.test(code))
+  );
 }
 function Barcode({ value }: { value: string }) {
+  const { tr } = useLanguage();
   const ref = useRef<SVGSVGElement>(null);
   useEffect(() => {
     if (ref.current)
@@ -25,7 +30,13 @@ function Barcode({ value }: { value: string }) {
         lineColor: "#000",
       });
   }, [value]);
-  return <svg ref={ref} role="img" aria-label={`Barcode ${value}`} />;
+  return (
+    <svg
+      ref={ref}
+      role="img"
+      aria-label={tr("Barcode {code}", { code: value })}
+    />
+  );
 }
 export default function BarcodeLabels({
   products,
@@ -36,6 +47,7 @@ export default function BarcodeLabels({
   business: Business;
   onClose: () => void;
 }) {
+  const { tr, language } = useLanguage();
   const [rows, setRows] = useState(products),
     [copies, setCopies] = useState<Record<number, string>>(() =>
       Object.fromEntries(products.map((p) => [p.id, "1"])),
@@ -78,13 +90,16 @@ export default function BarcodeLabels({
       onClose={() => {
         if (!busy) onClose();
       }}
-      title="Barcode labels"
-      description="Choose copies, then print or save a PDF. These labels use your saved product codes."
+      title={tr("Barcode labels")}
+      description={tr(
+        "Choose copies, then print or save a PDF. These labels use your saved product codes.",
+      )}
     >
       <div className="label-settings">
         <p className="muted">
-          50 × 30 mm labels on A4. Print at 100% scale with browser headers and
-          footers off. Try one page before printing a batch.
+          {tr(
+            "50 × 30 mm labels on A4. Print at 100% scale with browser headers and footers off. Try one page before printing a batch.",
+          )}
         </p>
         <label className="setup-checkbox">
           <input
@@ -92,7 +107,7 @@ export default function BarcodeLabels({
             checked={showPrice}
             onChange={(e) => setShowPrice(e.target.checked)}
           />
-          Include selling price
+          {tr("Include selling price")}
         </label>
         {rows.map((p) => (
           <div className="label-option" key={p.id}>
@@ -101,8 +116,9 @@ export default function BarcodeLabels({
               <small>{p.barcode || "No barcode yet"}</small>
               {p.barcode && !printable(p.barcode) && (
                 <small className="setup-warning">
-                  This code needs a larger label or a supported barcode format.
-                  Set copies to 0 to skip it.
+                  {tr(
+                    "This code needs a larger label or a supported barcode format. Set copies to 0 to skip it.",
+                  )}
                 </small>
               )}
               {!p.barcode && business.role !== "staff" && (
@@ -116,19 +132,21 @@ export default function BarcodeLabels({
                   ) : (
                     <WandSparkles size={16} />
                   )}
-                  Generate code
+                  {tr("Generate code")}
                 </button>
               )}
               {!p.barcode && business.role === "staff" && (
                 <small>
-                  Ask a manager to generate a code, or set copies to 0.
+                  {tr("Ask a manager to generate a code, or set copies to 0.")}
                 </small>
               )}
             </div>
             <label>
-              Copies
+              {tr("Copies")}
               <input
-                aria-label={`Label copies for ${p.display_name || p.name}`}
+                aria-label={tr("Label copies for {name}", {
+                  name: p.display_name || p.name,
+                })}
                 type="number"
                 min="0"
                 max="100"
@@ -142,11 +160,12 @@ export default function BarcodeLabels({
         ))}
         {error && (
           <p role="alert" className="error-box">
-            {error}
+            {tr(error)}
           </p>
         )}
         <p aria-live="polite">
-          {Number.isFinite(total) ? total : 0} labels · maximum 300 per batch
+          {Number.isFinite(total) ? total : 0}{" "}
+          {tr("labels · maximum 300 per batch")}
         </p>
         <button
           className="button primary full"
@@ -154,10 +173,10 @@ export default function BarcodeLabels({
           onClick={() => window.print()}
         >
           <Printer size={18} />
-          Print / Save PDF
+          {tr("Print / Save PDF")}
         </button>
       </div>
-      <div className="barcode-print-grid" aria-label="Label preview">
+      <div className="barcode-print-grid" aria-label={tr("Label preview")}>
         {valid &&
           rows.flatMap((p) =>
             Array.from({ length: Number(copies[p.id] || 0) }, (_, i) => (

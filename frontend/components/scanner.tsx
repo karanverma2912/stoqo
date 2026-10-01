@@ -1,4 +1,6 @@
 "use client";
+import { useLanguage } from "@/components/language-provider";
+
 import { useRef, useState, useEffect } from "react";
 import { BrowserMultiFormatReader, IScannerControls } from "@zxing/browser";
 import { Camera, ScanLine } from "lucide-react";
@@ -9,8 +11,11 @@ export default function Scanner({
   onResult: (code: string) => Promise<void>;
   continuous?: boolean;
 }) {
+  const { tr, language } = useLanguage();
   const onResultRef = useRef(onResult);
-  useEffect(() => { onResultRef.current = onResult; }, [onResult]);
+  useEffect(() => {
+    onResultRef.current = onResult;
+  }, [onResult]);
   const video = useRef<HTMLVideoElement>(null),
     controls = useRef<IScannerControls | null>(null),
     alive = useRef(false),
@@ -61,7 +66,9 @@ export default function Scanner({
   async function start() {
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
       setError(
-        "Camera requires HTTPS and a supported browser. Open Stoqo in Chrome, or use a photo below.",
+        tr(
+          "Camera requires HTTPS and a supported browser. Open Stoqo in Chrome, or use a photo below.",
+        ),
       );
       return;
     }
@@ -87,7 +94,8 @@ export default function Scanner({
             lastRead.current = { code: "", at: 0 };
           if (
             result &&
-            (!continuous || result.getText().trim() !== lastRead.current.code) &&
+            (!continuous ||
+              result.getText().trim() !== lastRead.current.code) &&
             !detected &&
             alive.current &&
             attempt === generation.current
@@ -108,15 +116,19 @@ export default function Scanner({
       setRunning(false);
       setError(
         (e as Error).name === "NotAllowedError"
-          ? "Camera permission denied. Allow camera access in browser/app settings, or scan a photo."
-          : "Camera unavailable or in use. Close other camera apps, try again, or scan a photo.",
+          ? tr(
+              "Camera permission denied. Allow camera access in browser/app settings, or scan a photo.",
+            )
+          : tr(
+              "Camera unavailable or in use. Close other camera apps, try again, or scan a photo.",
+            ),
       );
     }
   }
   async function photo(file?: File) {
     if (!file || lock.current) return;
     if (file.size > 15 * 1024 * 1024) {
-      setError("Choose a photo under 15 MB");
+      setError(tr("Choose a photo under 15 MB"));
       return;
     }
     stop();
@@ -132,7 +144,9 @@ export default function Scanner({
     } catch {
       if (alive.current)
         setError(
-          "No barcode found. Try a sharp close-up with the full barcode visible, or type the number.",
+          tr(
+            "No barcode found. Try a sharp close-up with the full barcode visible, or type the number.",
+          ),
         );
     } finally {
       URL.revokeObjectURL(url);
@@ -143,8 +157,12 @@ export default function Scanner({
     <div className="scanner">
       <p className="muted">
         {continuous
-          ? "Scan each item, then move its barcode out of the frame before scanning it again. New codes open Add product."
-          : "Keep the full barcode in the frame, in good light. Saved items open with their details. New codes open Add product."}
+          ? tr(
+              "Scan each item, then move its barcode out of the frame before scanning it again. New codes open Add product.",
+            )
+          : tr(
+              "Keep the full barcode in the frame, in good light. Saved items open with their details. New codes open Add product.",
+            )}
       </p>
       <div className="camera-view">
         <video ref={video} autoPlay muted playsInline />
@@ -157,7 +175,7 @@ export default function Scanner({
         disabled={running || busy}
       >
         <Camera size={19} />
-        {running ? "Looking for a barcode…" : "Use your camera"}
+        {running ? tr("Looking for a barcode…") : tr("Use your camera")}
       </button>
       {running && (
         <button
@@ -167,11 +185,11 @@ export default function Scanner({
             setRunning(false);
           }}
         >
-          Stop camera
+          {tr("Stop camera")}
         </button>
       )}
       <label>
-        Scan a photo
+        {tr("Scan a photo")}
         <input
           type="file"
           accept="image/*"
@@ -183,7 +201,7 @@ export default function Scanner({
           }}
         />
       </label>
-      <p className="divider-text">or use a USB scanner / type it in</p>
+      <p className="divider-text">{tr("or use a USB scanner / type it in")}</p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -193,22 +211,22 @@ export default function Scanner({
         }}
       >
         <label>
-          Barcode
+          {tr("Barcode")}
           <input
             name="barcode"
             required
             maxLength={100}
             autoComplete="off"
-            placeholder="Scan or enter barcode number"
+            placeholder={tr("Scan or enter barcode number")}
           />
         </label>
         <button className="button subtle full" disabled={busy}>
-          {busy ? "Finding product…" : "Find product"}
+          {busy ? tr("Finding product…") : tr("Find product")}
         </button>
       </form>
       {error && (
         <p className="error-box" role="alert">
-          {error}
+          {tr(error)}
         </p>
       )}
     </div>

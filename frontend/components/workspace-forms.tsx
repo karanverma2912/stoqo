@@ -1,4 +1,7 @@
 "use client";
+
+import { useLanguage } from "@/components/language-provider";
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -54,6 +57,7 @@ export function ProductForm({
   barcode?: string;
   onDone: () => void;
 }) {
+  const { tr, language } = useLanguage();
   const [error, setError] = useState("");
   const [image, setImage] = useState<File>();
   const cats = useQuery({
@@ -128,7 +132,9 @@ export function ProductForm({
         businessId,
       );
       toast.success(
-        product ? "Product updated" : "A new product on your shelves ✨",
+        product
+          ? tr("Product updated")
+          : tr("A new product on your shelves ✨"),
       );
       onDone();
     } catch (e) {
@@ -137,83 +143,98 @@ export function ProductForm({
   }
   return (
     <form onSubmit={handleSubmit(submit)} className="product-form">
-      {barcode && <p className="muted">New barcode: {barcode}. Add its details once; the next scan will find this item.</p>}
+      {barcode && (
+        <p className="muted">
+          {tr("New barcode:")} {barcode}{" "}
+          {tr(". Add its details once; the next scan will find this item.")}
+        </p>
+      )}
       <div className="form-grid">
-        <label>Size (optional)<input placeholder="M, XL, 32, 500 ml…" {...register("size")} /></label>
-        <label>Colour (optional)<input placeholder="Black, white…" {...register("color")} /></label>
+        <label>
+          {tr("Size (optional)")}
+          <input placeholder="M, XL, 32, 500 ml…" {...register("size")} />
+        </label>
+        <label>
+          {tr("Colour (optional)")}
+          <input placeholder={tr("Black, white…")} {...register("color")} />
+        </label>
       </div>
       <label>
-        Product name <span className="required">*</span>
+        {tr("Product name")}
+        <span className="required">*</span>
         <input
           autoFocus
-          placeholder="e.g. Everyday oversized tee"
+          placeholder={tr("e.g. Everyday oversized tee")}
           {...register("name")}
         />
-        <small className="field-error">{errors.name?.message}</small>
+        <small className="field-error">{tr(errors.name?.message || "")}</small>
       </label>
       <div className="form-grid">
         <label>
-          Selling price
+          {tr("Selling price")}
           <input
             inputMode="decimal"
             placeholder="0.00"
             {...register("selling_price")}
           />
-          <small className="field-error">{errors.selling_price?.message}</small>
+          <small className="field-error">
+            {tr(errors.selling_price?.message || "")}
+          </small>
         </label>
         {!product && (
           <label>
-            Opening stock
+            {tr("Opening stock")}
             <input
               inputMode="decimal"
               placeholder="0"
               {...register("initial_quantity")}
             />
             <small className="field-error">
-              {errors.initial_quantity?.message}
+              {tr(errors.initial_quantity?.message || "")}
             </small>
           </label>
         )}
       </div>
       <details open={!!barcode || !!product}>
         <summary>
-          More options <ChevronDown size={17} />
+          {tr("More options")}
+          <ChevronDown size={17} />
         </summary>
         <div className="advanced-fields">
           <div className="form-grid">
             <label>
-              Purchase price
+              {tr("Purchase price")}
               <input
                 inputMode="decimal"
                 placeholder="0.00"
                 {...register("purchase_price")}
               />
               <small className="field-error">
-                {errors.purchase_price?.message}
+                {tr(errors.purchase_price?.message || "")}
               </small>
             </label>
             <label>
-              Low stock alert
+              {tr("Low stock alert")}
               <input inputMode="decimal" {...register("low_stock_threshold")} />
               <small className="field-error">
-                {errors.low_stock_threshold?.message}
+                {tr(errors.low_stock_threshold?.message || "")}
               </small>
             </label>
           </div>
           <div className="form-grid">
             <label>
-              SKU
+              {tr("SKU")}
               <input {...register("sku")} />
             </label>
             <label>
-              Barcode
+              {tr("Barcode")}
               <input {...register("barcode")} />
             </label>
           </div>
           <label>
-            Category
+            {tr("Category")}
             <select {...register("category_id")}>
-              <option value="">No category</option>
+              <option value="">{tr("No category")}</option>
               {cats.data?.data.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -222,44 +243,46 @@ export function ProductForm({
             </select>
           </label>
           <label>
-            Or create a category
+            {tr("Or create a category")}
             <input
-              placeholder="e.g. Clothing"
+              placeholder={tr("e.g. Clothing")}
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
             />
           </label>
           <label>
-            Unit
+            {tr("Unit")}
             <select {...register("unit")}>
-              <option>units</option>
-              <option>pieces</option>
-              <option>kg</option>
-              <option>g</option>
-              <option>litres</option>
-              <option>metres</option>
-              <option>boxes</option>
-              <option>pairs</option>
+              <option value="units">{tr("units")}</option>
+              <option value="pieces">{tr("pieces")}</option>
+              <option value="kg">{tr("kg")}</option>
+              <option value="g">{tr("g")}</option>
+              <option value="litres">{tr("litres")}</option>
+              <option value="metres">{tr("metres")}</option>
+              <option value="boxes">{tr("boxes")}</option>
+              <option value="pairs">{tr("pairs")}</option>
             </select>
           </label>
           <label>
-            Description
+            {tr("Description")}
             <textarea rows={3} {...register("description")} />
           </label>
           <label>
-            Product image
+            {tr("Product image")}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
               onChange={(e) => setImage(e.target.files?.[0])}
             />
-            <small className="muted">JPG, PNG or WebP. Up to 5 MB.</small>
+            <small className="muted">
+              {tr("JPG, PNG or WebP. Up to 5 MB.")}
+            </small>
           </label>
         </div>
       </details>
       {error && (
         <p className="error-box" role="alert">
-          {error}
+          {tr(error)}
         </p>
       )}
       <div className="form-sticky">
@@ -269,7 +292,7 @@ export function ProductForm({
           ) : (
             <Plus size={18} />
           )}{" "}
-          {product ? "Save changes" : "Add product"}
+          {product ? tr("Save changes") : tr("Add product")}
         </button>
       </div>
     </form>
@@ -286,6 +309,7 @@ export function StockForm({
   direction: "in" | "out";
   onDone: () => void;
 }) {
+  const { tr, language } = useLanguage();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [selected, setSelected] = useState<Product | undefined>(product);
@@ -317,7 +341,7 @@ export function StockForm({
         try {
           const amount = Number(fd.get("quantity"));
           if (!Number.isFinite(amount) || amount <= 0)
-            throw new Error("Enter a quantity greater than zero");
+            throw new Error(tr("Enter a quantity greater than zero"));
           await api(
             "stock_movements",
             {
@@ -337,7 +361,12 @@ export function StockForm({
             businessId,
           );
           toast.success(
-            `${units(amount)} ${selected.unit} ${direction === "in" ? "added" : "removed"}. Stock updated.`,
+            tr(
+              direction === "in"
+                ? "{count} {unit} added. Stock updated."
+                : "{count} {unit} removed. Stock updated.",
+              { count: units(amount), unit: tr(selected.unit) },
+            ),
           );
           onDone();
         } catch (e) {
@@ -353,22 +382,23 @@ export function StockForm({
           <span>
             <strong>{selected.name}</strong>
             <small>
-              {units(selected.current_stock)} {selected.unit} available
+              {units(selected.current_stock)} {tr(selected.unit)}{" "}
+              {tr("available")}
             </small>
           </span>
           {!product && (
             <button type="button" onClick={() => setSelected(undefined)}>
-              Change
+              {tr("Change")}
             </button>
           )}
         </div>
       ) : (
         <>
           <label>
-            Find a product
+            {tr("Find a product")}
             <input
               autoFocus
-              placeholder="Search your inventory"
+              placeholder={tr("Search your inventory")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -378,13 +408,13 @@ export function StockForm({
               <button type="button" key={p.id} onClick={() => setSelected(p)}>
                 <span>{p.display_name || p.name}</span>
                 <small>
-                  {units(p.current_stock)} {p.unit}
+                  {units(p.current_stock)} {tr(p.unit)}
                 </small>
               </button>
             ))}
-            {query.error && <p role="alert">{query.error.message}</p>}
+            {query.error && <p role="alert">{tr(query.error.message)}</p>}
             {query.data?.data.length === 0 && (
-              <p className="muted">No products found.</p>
+              <p className="muted">{tr("No products found.")}</p>
             )}
           </div>
         </>
@@ -392,7 +422,7 @@ export function StockForm({
       {selected && (
         <>
           <label>
-            Quantity
+            {tr("Quantity")}
             <input
               className="quantity-input"
               name="quantity"
@@ -408,18 +438,19 @@ export function StockForm({
           </label>
           {direction === "out" ? (
             <label>
-              Reason
+              {tr("Reason")}
               <select name="reason">
-                <option value="sale">Sale</option>
-                <option value="damage">Damage</option>
-                <option value="adjustment">Adjustment</option>
-                <option value="other">Other</option>
-                <option value="return_out">Return to supplier</option>
+                <option value="sale">{tr("Sale")}</option>
+                <option value="damage">{tr("Damage")}</option>
+                <option value="adjustment">{tr("Adjustment")}</option>
+                <option value="other">{tr("Other")}</option>
+                <option value="return_out">{tr("Return to supplier")}</option>
               </select>
             </label>
           ) : (
             <label>
-              Unit cost <span className="muted">optional</span>
+              {tr("Unit cost")}
+              <span className="muted">{tr("optional")}</span>
               <input
                 name="unit_cost"
                 type="number"
@@ -431,29 +462,30 @@ export function StockForm({
             </label>
           )}
           <label>
-            Note <span className="muted">optional</span>
+            {tr("Note")}
+            <span className="muted">{tr("optional")}</span>
             <textarea
               name="note"
               maxLength={1000}
               rows={3}
               placeholder={
                 direction === "in"
-                  ? "e.g. Monday supplier delivery"
-                  : "e.g. Order #1024"
+                  ? tr("e.g. Monday supplier delivery")
+                  : tr("e.g. Order #1024")
               }
             />
           </label>
           {error && (
             <p role="alert" className="error-box">
-              {error}
+              {tr(error)}
             </p>
           )}
           <button className="button primary full" disabled={busy}>
             {busy
-              ? "Updating stock…"
+              ? tr("Updating stock…")
               : direction === "in"
-                ? "Add stock"
-                : "Remove stock"}
+                ? tr("Add stock")
+                : tr("Remove stock")}
             <ArrowUpRight size={18} />
           </button>
         </>
@@ -474,6 +506,7 @@ export function ImportForm({
   businessId: number;
   onDone: () => void;
 }) {
+  const { tr, language } = useLanguage();
   const [id, setId] = useState<number>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -493,12 +526,13 @@ export function ImportForm({
   return (
     <div className="import-form">
       <p className="muted">
-        Bring your products from a CSV or Excel file. We’ll tell you which rows
-        need a second look.
+        {tr(
+          "Bring your products from a CSV or Excel file. We’ll tell you which rows need a second look.",
+        )}
       </p>
       <a className="button subtle full" href="/import-template.csv" download>
         <Download size={17} />
-        Download the template
+        {tr("Download the template")}
       </a>
       <form
         onSubmit={async (e) => {
@@ -522,8 +556,8 @@ export function ImportForm({
       >
         <label className="upload-zone">
           <Upload size={30} />
-          <strong>Choose your inventory file</strong>
-          <span>CSV or XLSX · Up to 5 MB · 5,000 rows</span>
+          <strong>{tr("Choose your inventory file")}</strong>
+          <span>{tr("CSV or XLSX · Up to 5 MB · 5,000 rows")}</span>
           <input name="file" type="file" accept=".csv,.xlsx" required />
         </label>
         <button
@@ -532,27 +566,29 @@ export function ImportForm({
             busy || (!!id && !["completed", "failed"].includes(status || ""))
           }
         >
-          {busy ? "Uploading…" : "Import products"}
+          {busy ? tr("Uploading…") : tr("Import products")}
         </button>
       </form>
       {error && (
         <p role="alert" className="error-box">
-          {error}
+          {tr(error)}
         </p>
       )}
       {query.data && (
         <div className="import-result">
           <h3>
             {status === "completed"
-              ? `${query.data.data.imported_count} products imported`
+              ? tr("{count} products imported", {
+                  count: query.data.data.imported_count,
+                })
               : status === "failed"
-                ? "This file needs another look"
-                : "Making room on your shelves…"}
+                ? tr("This file needs another look")
+                : tr("Making room on your shelves…")}
           </h3>
           {query.data.data.row_errors.map((e, i) => (
             <p key={i} className="error-box">
-              {e.row ? `Row ${e.row}: ` : ""}
-              {e.message}
+              {e.row ? tr("Row {row}: ", { row: e.row }) : ""}
+              {tr(e.message)}
             </p>
           ))}
         </div>

@@ -1,4 +1,6 @@
 "use client";
+import { useLanguage } from "@/components/language-provider";
+
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 export function Sheet({
@@ -14,6 +16,7 @@ export function Sheet({
   description?: string;
   children: React.ReactNode;
 }) {
+  const { tr } = useLanguage();
   return (
     <Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
       <Dialog.Portal>
@@ -21,13 +24,13 @@ export function Sheet({
         <Dialog.Content className="sheet-content">
           <div className="sheet-handle" />
           <div className="sheet-heading">
-            <Dialog.Title>{title}</Dialog.Title>
-            <Dialog.Close className="icon-button" aria-label="Close">
+            <Dialog.Title>{tr(title)}</Dialog.Title>
+            <Dialog.Close className="icon-button" aria-label={tr("Close")}>
               <X size={20} />
             </Dialog.Close>
           </div>
           <Dialog.Description className={description ? "muted" : "sr-only"}>
-            {description || title}
+            {tr(description || title)}
           </Dialog.Description>
           {children}
         </Dialog.Content>

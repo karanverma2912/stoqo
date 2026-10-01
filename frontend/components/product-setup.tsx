@@ -1,4 +1,7 @@
 "use client";
+
+import { useLanguage } from "@/components/language-provider";
+
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -40,6 +43,7 @@ export function ProductSetup({
   business: Business;
   userId: number;
 }) {
+  const { tr, language } = useLanguage();
   const [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
     [page, setPage] = useState(1),
@@ -74,15 +78,18 @@ export function ProductSetup({
     <div className="product-setup">
       <Link className="text-link" href="/app/inventory">
         <ChevronLeft size={16} />
-        Inventory
+        {tr("Inventory")}
       </Link>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">ONE PRODUCT, EVERY OPTION</span>
+          <span className="eyebrow">{tr("ONE PRODUCT, EVERY OPTION")}</span>
           <h1>
-            Sizes, colours & labels<span className="accent-period">.</span>
+            {tr("Sizes, colours & labels")}
+            <span className="accent-period">.</span>
           </h1>
-          <p>Keep your range together. Track every variant separately.</p>
+          <p>
+            {tr("Keep your range together. Track every variant separately.")}
+          </p>
         </div>
         <div className="heading-actions">
           <button
@@ -90,7 +97,7 @@ export function ProductSetup({
             onClick={() => setBrowseLabels(true)}
           >
             <Printer size={18} />
-            Print labels
+            {tr("Print labels")}
           </button>
           {canEdit && (
             <button
@@ -101,7 +108,7 @@ export function ProductSetup({
               }}
             >
               <Plus size={18} />
-              Create product group
+              {tr("Create product group")}
             </button>
           )}
         </div>
@@ -109,17 +116,17 @@ export function ProductSetup({
       <label className="search-field setup-search">
         <Search size={18} />
         <input
-          aria-label="Search product groups"
-          placeholder="Search product groups"
+          aria-label={tr("Search product groups")}
+          placeholder={tr("Search product groups")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </label>
       {groups.isPending ? (
-        <p>Loading your product groups…</p>
+        <p>{tr("Loading your product groups…")}</p>
       ) : groups.error ? (
         <p role="alert" className="error-box">
-          {groups.error.message}
+          {tr(groups.error.message)}
         </p>
       ) : groups.data.data.length ? (
         <div className="setup-group-grid">
@@ -134,9 +141,12 @@ export function ProductSetup({
                 <Layers3 size={24} />
               </span>
               <strong>{g.name}</strong>
-              <span>{g.variant_count} variants</span>
+              <span>
+                {g.variant_count} {tr("variants")}
+              </span>
               <span className="setup-card-link">
-                View range <ChevronRight size={16} />
+                {tr("View range")}
+                <ChevronRight size={16} />
               </span>
             </motion.button>
           ))}
@@ -145,17 +155,21 @@ export function ProductSetup({
         <div className="panel setup-empty">
           <Layers3 size={42} />
           <h2>
-            {query ? "No matching groups" : "One tee. Every size and colour."}
+            {query
+              ? tr("No matching groups")
+              : tr("One tee. Every size and colour.")}
           </h2>
           <p>
             {query
-              ? "Try another product name."
-              : "Create a range in one go, or group items already on your shelves."}
+              ? tr("Try another product name.")
+              : tr(
+                  "Create a range in one go, or group items already on your shelves.",
+                )}
           </p>
           {canEdit && !query && (
             <button className="button primary" onClick={() => setCreate(true)}>
               <Plus size={18} />
-              Create product group
+              {tr("Create product group")}
             </button>
           )}
         </div>
@@ -166,7 +180,7 @@ export function ProductSetup({
           disabled={page === 1}
           onClick={() => setPage((p) => p - 1)}
         >
-          Previous
+          {tr("Previous")}
         </button>
         <span>{page}</span>
         <button
@@ -174,7 +188,7 @@ export function ProductSetup({
           disabled={page >= (groups.data?.meta.pages || 1)}
           onClick={() => setPage((p) => p + 1)}
         >
-          Next
+          {tr("Next")}
         </button>
       </div>
       {selected !== undefined && !create && (
@@ -184,9 +198,9 @@ export function ProductSetup({
           title={detail.data?.data.name || "Product group"}
         >
           {detail.isPending ? (
-            <p>Loading variants…</p>
+            <p>{tr("Loading variants…")}</p>
           ) : detail.error ? (
-            <p role="alert">{detail.error.message}</p>
+            <p role="alert">{tr(detail.error.message)}</p>
           ) : (
             detail.data && (
               <>
@@ -197,7 +211,7 @@ export function ProductSetup({
                     onClick={() => setLabels(detail.data!.data.products)}
                   >
                     <Printer size={17} />
-                    Print group labels
+                    {tr("Print group labels")}
                   </button>
                   {canEdit && (
                     <button
@@ -205,12 +219,14 @@ export function ProductSetup({
                       onClick={() => setCreate(true)}
                     >
                       <Plus size={17} />
-                      Add variants
+                      {tr("Add variants")}
                     </button>
                   )}
                 </div>
                 <p className="muted">
-                  Each size and colour has its own stock, price and barcode.
+                  {tr(
+                    "Each size and colour has its own stock, price and barcode.",
+                  )}
                 </p>
                 <div className="setup-variant-list">
                   {detail.data.data.products?.map((p) => (
@@ -237,7 +253,7 @@ export function ProductSetup({
                   ))}
                 </div>
                 {!detail.data.data.products?.length && (
-                  <p>No active variants in this group.</p>
+                  <p>{tr("No active variants in this group.")}</p>
                 )}
               </>
             )
@@ -261,7 +277,7 @@ export function ProductSetup({
         <Sheet
           open
           onClose={() => setBrowseLabels(false)}
-          title="Choose products for labels"
+          title={tr("Choose products for labels")}
         >
           <ProductPicker
             businessId={business.id}
@@ -296,6 +312,7 @@ function VariantForm({
   onClose: () => void;
   onDone: (g: ProductGroup) => void;
 }) {
+  const { tr, language } = useLanguage();
   const [mode, setMode] = useState<"new" | "existing">("new"),
     [name, setName] = useState(group?.name || ""),
     [sizes, setSizes] = useState(""),
@@ -315,7 +332,9 @@ function VariantForm({
       if (saved) {
         setPending(JSON.parse(saved));
         setError(
-          "The last setup response was uncertain. Retry it to avoid creating duplicates.",
+          tr(
+            "The last setup response was uncertain. Retry it to avoid creating duplicates.",
+          ),
         );
       }
     } catch {}
@@ -343,7 +362,7 @@ function VariantForm({
       sessionStorage.removeItem(key);
       setPending(undefined);
       await client.invalidateQueries();
-      toast.success("Your product range is ready");
+      toast.success(tr("Your product range is ready"));
       onDone(result.data);
     } catch (e) {
       setError((e as Error).message);
@@ -375,36 +394,42 @@ function VariantForm({
       onClose={() => {
         if (!busy && !pending) onClose();
       }}
-      title={group ? `Add to ${group.name}` : "Create a product group"}
-      description="Start with sizes and colours. Review the combinations before saving."
+      title={
+        group
+          ? tr("Add to {name}", { name: group.name })
+          : tr("Create a product group")
+      }
+      description={tr(
+        "Start with sizes and colours. Review the combinations before saving.",
+      )}
     >
       <div className="variant-form">
         {error && (
           <p role="alert" className="error-box">
-            {error}
+            {tr(error)}
           </p>
         )}
         {pending ? (
           <div className="setup-pending">
-            <p>Your previous setup is saved for a safe retry.</p>
+            <p>{tr("Your previous setup is saved for a safe retry.")}</p>
             <button
               className="button primary full"
               disabled={busy}
               onClick={() => save()}
             >
-              {busy ? "Saving…" : "Retry setup"}
+              {busy ? tr("Saving…") : tr("Retry setup")}
             </button>
           </div>
         ) : (
           <>
             <label>
-              Product group name
+              {tr("Product group name")}
               <input
-                aria-label="Product group name"
+                aria-label={tr("Product group name")}
                 maxLength={200}
                 value={name}
                 disabled={!!group}
-                placeholder="e.g. Classic Tee"
+                placeholder={tr("e.g. Classic Tee")}
                 onChange={(e) => setName(e.target.value)}
               />
             </label>
@@ -415,7 +440,7 @@ function VariantForm({
                 onClick={() => setMode("new")}
               >
                 <Plus size={17} />
-                New variants
+                {tr("New variants")}
               </button>
               <button
                 aria-pressed={mode === "existing"}
@@ -423,14 +448,15 @@ function VariantForm({
                 onClick={() => setMode("existing")}
               >
                 <Link2 size={17} />
-                Existing products
+                {tr("Existing products")}
               </button>
             </div>
             {mode === "existing" ? (
               <>
                 <p className="muted">
-                  Group existing items without changing their names, quantities
-                  or histories. Each size/colour combination must be different.
+                  {tr(
+                    "Group existing items without changing their names, quantities or histories. Each size/colour combination must be different.",
+                  )}
                 </p>
                 <ProductPicker
                   businessId={business.id}
@@ -444,31 +470,31 @@ function VariantForm({
               <>
                 <div className="variant-options">
                   <label>
-                    Sizes
+                    {tr("Sizes")}
                     <input
-                      aria-label="Sizes"
+                      aria-label={tr("Sizes")}
                       placeholder="S, M, L, XL"
                       value={sizes}
                       maxLength={1000}
                       onChange={(e) => setSizes(e.target.value)}
                     />
-                    <small>Separate sizes with commas.</small>
+                    <small>{tr("Separate sizes with commas.")}</small>
                   </label>
                   <label>
-                    Colours
+                    {tr("Colours")}
                     <input
-                      aria-label="Colours"
-                      placeholder="Black, White"
+                      aria-label={tr("Colours")}
+                      placeholder={tr("Black, White")}
                       value={colors}
                       maxLength={1000}
                       onChange={(e) => setColors(e.target.value)}
                     />
-                    <small>Sizes or colours can be left empty.</small>
+                    <small>{tr("Sizes or colours can be left empty.")}</small>
                   </label>
                   <label>
-                    Selling price for each
+                    {tr("Selling price for each")}
                     <input
-                      aria-label="Variant selling price"
+                      aria-label={tr("Variant selling price")}
                       type="number"
                       min="0"
                       max="99999999"
@@ -478,9 +504,9 @@ function VariantForm({
                     />
                   </label>
                   <label>
-                    Opening stock for each
+                    {tr("Opening stock for each")}
                     <input
-                      aria-label="Variant opening stock"
+                      aria-label={tr("Variant opening stock")}
                       type="number"
                       min="0"
                       max="99999999"
@@ -496,18 +522,21 @@ function VariantForm({
                   disabled={!name.trim()}
                 >
                   {rows.length
-                    ? "Rebuild combinations"
-                    : "Preview combinations"}
+                    ? tr("Rebuild combinations")
+                    : tr("Preview combinations")}
                 </button>
                 {rows.length > 0 && (
                   <>
                     <p className="setup-preview-heading">
-                      <strong>{rows.length} variants</strong>
-                      <span>Adjust any row before saving.</span>
+                      <strong>
+                        {rows.length} {tr("variants")}
+                      </strong>
+                      <span>{tr("Adjust any row before saving.")}</span>
                     </p>
                     <p className="muted">
-                      Blank barcodes get a unique internal code. Rebuilding
-                      combinations replaces row edits.
+                      {tr(
+                        "Blank barcodes get a unique internal code. Rebuilding combinations replaces row edits.",
+                      )}
                     </p>
                     <AnimatePresence initial={false}>
                       {rows.map((r, i) => (
@@ -525,7 +554,10 @@ function VariantForm({
                             </strong>
                             <button
                               className="icon-button"
-                              aria-label={`Remove variant ${r.color} ${r.size}`}
+                              aria-label={tr("Remove variant {color} {size}", {
+                                color: r.color,
+                                size: r.size,
+                              })}
                               onClick={() =>
                                 setRows((all) => all.filter((_, n) => n !== i))
                               }
@@ -535,9 +567,12 @@ function VariantForm({
                           </div>
                           <div className="variant-row-fields">
                             <label>
-                              Price
+                              {tr("Price")}
                               <input
-                                aria-label={`Price ${r.color} ${r.size}`}
+                                aria-label={tr("Price {color} {size}", {
+                                  color: r.color,
+                                  size: r.size,
+                                })}
                                 type="number"
                                 min="0"
                                 step="0.01"
@@ -548,9 +583,12 @@ function VariantForm({
                               />
                             </label>
                             <label>
-                              Opening stock
+                              {tr("Opening stock")}
                               <input
-                                aria-label={`Opening stock ${r.color} ${r.size}`}
+                                aria-label={tr("Opening stock {color} {size}", {
+                                  color: r.color,
+                                  size: r.size,
+                                })}
                                 type="number"
                                 min="0"
                                 step="0.001"
@@ -562,20 +600,20 @@ function VariantForm({
                             </label>
                           </div>
                           <details>
-                            <summary>Barcode, SKU & cost</summary>
+                            <summary>{tr("Barcode, SKU & cost")}</summary>
                             <label>
-                              Barcode
+                              {tr("Barcode")}
                               <input
                                 maxLength={100}
                                 value={r.barcode}
-                                placeholder="Generate automatically"
+                                placeholder={tr("Generate automatically")}
                                 onChange={(e) =>
                                   edit(i, "barcode", e.target.value)
                                 }
                               />
                             </label>
                             <label>
-                              SKU
+                              {tr("SKU")}
                               <input
                                 maxLength={100}
                                 value={r.sku}
@@ -583,7 +621,7 @@ function VariantForm({
                               />
                             </label>
                             <label>
-                              Purchase price
+                              {tr("Purchase price")}
                               <input
                                 type="number"
                                 min="0"
@@ -608,7 +646,7 @@ function VariantForm({
                       ) : (
                         <Check size={18} />
                       )}
-                      Create {rows.length} variants
+                      {tr("Create")} {rows.length} {tr("variants")}
                     </button>
                   </>
                 )}
@@ -633,6 +671,7 @@ function ProductPicker({
   onDone: (ps: Product[]) => void;
   buttonText: string;
 }) {
+  const { tr, language } = useLanguage();
   const [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
     [page, setPage] = useState(1),
@@ -658,17 +697,19 @@ function ProductPicker({
       <label className="search-field">
         <Search size={18} />
         <input
-          aria-label="Search products to select"
-          placeholder="Search products"
+          aria-label={tr("Search products to select")}
+          placeholder={tr("Search products")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </label>
-      <p aria-live="polite">{picked.length} selected · up to 100</p>
+      <p aria-live="polite">
+        {picked.length} {tr("selected · up to 100")}
+      </p>
       {products.isPending ? (
-        <p>Loading products…</p>
+        <p>{tr("Loading products…")}</p>
       ) : products.error ? (
-        <p role="alert">{products.error.message}</p>
+        <p role="alert">{tr(products.error.message)}</p>
       ) : products.data.data.length ? (
         products.data.data.map((p) => (
           <label className="setup-picker-row" key={p.id}>
@@ -696,7 +737,7 @@ function ProductPicker({
           </label>
         ))
       ) : (
-        <p>No matching products.</p>
+        <p>{tr("No matching products.")}</p>
       )}
       <div className="checkout-pagination">
         <button
@@ -704,7 +745,7 @@ function ProductPicker({
           disabled={page === 1}
           onClick={() => setPage((p) => p - 1)}
         >
-          Previous
+          {tr("Previous")}
         </button>
         <span>{page}</span>
         <button
@@ -712,7 +753,7 @@ function ProductPicker({
           disabled={page >= (products.data?.meta.pages || 1)}
           onClick={() => setPage((p) => p + 1)}
         >
-          Next
+          {tr("Next")}
         </button>
       </div>
       <button

@@ -1,4 +1,5 @@
 "use client";
+import { LanguageProvider } from "./language-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { MotionConfig } from "framer-motion";
@@ -18,10 +19,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={client}>
-        <MotionConfig reducedMotion="user">
-          {children}
-          <Toaster richColors position="top-center" />
-        </MotionConfig>
+        <LanguageProvider>
+          <MotionConfig reducedMotion="user">
+            {children}
+            <Toaster richColors position="top-center" />
+          </MotionConfig>
+        </LanguageProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

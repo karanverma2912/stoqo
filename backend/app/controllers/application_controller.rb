@@ -44,7 +44,23 @@ class ApplicationController < ActionController::API
     authorize current_business, permission, policy_class: BusinessPolicy
     error("subscription_expired", "Your subscription is read-only. Your inventory remains available; ask the owner to review the plan.", :payment_required) unless current_business.writable?
   end
-  def data(value, meta: {}, status: :ok) = render(json: {data: value, meta: meta}, status: status)
+  def costs_allowed?
+    BusinessPolicy.new(pundit_user, current_business).costs?
+  end
+  # Apply to nested payloads too (variants, dashboard movements and audit changes).
+  def without_costs(value)
+    case value
+    when Hash
+      value.except("purchase_price", "unit_cost", "inventory_value", :purchase_price, :unit_cost, :inventory_value)
+        .transform_values { |child| without_costs(child) }
+    when Array then value.map { |child| without_costs(child) }
+    else value
+    end
+  end
+  def data(value, meta: {}, status: :ok)
+    value = without_costs(value.as_json) if @current_business && !costs_allowed?
+    render(json: {data: value, meta: meta}, status: status)
+  end
   def error(code, message, status, details = {}) = render(json: {error: {code: code, message: message, details: details}}, status: status)
   def paginated(scope)
     page = [params.fetch(:page, 1).to_i, 1].max

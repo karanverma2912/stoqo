@@ -23,7 +23,9 @@ class Api::V1::ProductGroupsController < ApplicationController
   end
   private
   def setup_params
-    params.require(:product_group).permit(:name, :idempotency_key, product_ids: [], variants: [:size, :color, :selling_price, :purchase_price, :low_stock_threshold, :sku, :barcode, :unit, :category_id, :initial_quantity])
+    permitted = params.require(:product_group).permit(:name, :idempotency_key, product_ids: [], variants: [:size, :color, :selling_price, :purchase_price, :low_stock_threshold, :sku, :barcode, :unit, :category_id, :initial_quantity])
+    permitted[:variants]&.each { |variant| variant.delete(:purchase_price) } unless costs_allowed?
+    permitted
   end
   def serialize(group)
     products = group.products.active.includes(:category, image_attachment: :blob).order(:color, :size, :id)

@@ -401,6 +401,7 @@ export function Workspace() {
       >
         {(modal === "add" || modal === "edit") && (
           <ProductForm
+            canViewCosts={["owner", "admin"].includes(business.role || "")}
             businessId={id!}
             product={modal === "edit" ? selected : undefined}
             barcode={barcode}
@@ -412,6 +413,7 @@ export function Workspace() {
         )}
         {(modal === "in" || modal === "out") && (
           <StockForm
+            canViewCosts={["owner", "admin"].includes(business.role || "")}
             businessId={id!}
             product={selected}
             direction={modal}
@@ -577,10 +579,10 @@ export function Workspace() {
               <Settings />
               {tr("Settings & plan")}
             </button>
-            <button onClick={() => open("import")}>
+{["owner", "admin"].includes(business.role || "") && (            <button onClick={() => open("import")}>
               <Upload />
               {tr("Import inventory")}
-            </button>
+            </button>)}
             <button
               onClick={() =>
                 setTheme(resolvedTheme === "dark" ? "light" : "dark")
@@ -633,14 +635,14 @@ function Overview({
       <div className="stats-grid">
         <article className="stat-card featured">
           <div>
-            <span>{tr("Inventory value")}</span>
+            <span>{tr(d.inventory_value !== undefined ? "Inventory value" : "Estimated retail value")}</span>
             <span className="stat-icon">
               <Boxes size={19} />
             </span>
           </div>
-          <strong>{money(d.inventory_value, business.currency)}</strong>
+          <strong>{money(d.inventory_value ?? d.retail_value, business.currency)}</strong>
           <small>
-            {tr("At purchase cost")}
+            {tr(d.inventory_value !== undefined ? "At purchase cost" : "At current selling prices")}
             <ArrowUpRight size={15} />
           </small>
           <div className="stat-orbit" />
@@ -897,10 +899,10 @@ function Inventory({
             <Layers3 size={17} />
             {tr("Sizes & labels")}
           </Link>
-          <button className="button subtle" onClick={() => open("import")}>
+{["owner", "admin"].includes(business.role || "") && (          <button className="button subtle" onClick={() => open("import")}>
             <Upload size={17} />
             {tr("Import")}
-          </button>
+          </button>)}
           <button className="button dark-button" onClick={() => open("add")}>
             <Plus size={18} />
             {tr("Add product")}
@@ -1108,7 +1110,7 @@ function ProductDetail({
       <dl className="detail-grid">
         {[
           ["Selling price", money(product.selling_price, currency)],
-          ["Purchase price", money(product.purchase_price, currency)],
+          ...(product.purchase_price !== undefined ? [["Purchase price", money(product.purchase_price, currency)]] : []),
           ["SKU", product.sku || "—"],
           ["Size", product.size || "—"],
           ["Colour", product.color || "—"],
@@ -1120,7 +1122,7 @@ function ProductDetail({
           ],
         ].map(([k, v]) => (
           <div key={k}>
-            <dt>{k}</dt>
+            <dt>{tr(k)}</dt>
             <dd>{v}</dd>
           </div>
         ))}
@@ -1239,7 +1241,7 @@ function Reports({ id, business }: { id: number; business: Business }) {
       api<{
         total_products: number;
         total_units: string;
-        inventory_value: string;
+        inventory_value?: string;
         retail_value: string;
         stock_in: string;
         stock_out: string;
@@ -1305,11 +1307,11 @@ function Reports({ id, business }: { id: number; business: Business }) {
         d && (
           <>
             <div className="stats-grid">
-              <Stat
+{d.inventory_value !== undefined && (              <Stat
                 label={tr("Inventory cost value")}
-                value={money(d.inventory_value, business.currency)}
+                value={money(d.inventory_value ?? d.retail_value, business.currency)}
                 foot="Current purchase cost"
-              />
+              />)}
               <Stat
                 label={tr("Estimated retail value")}
                 value={money(d.retail_value, business.currency)}

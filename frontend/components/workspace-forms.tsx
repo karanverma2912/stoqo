@@ -48,11 +48,13 @@ export const productSchema = z.object({
 type ProductFields = z.infer<typeof productSchema>;
 export function ProductForm({
   businessId,
+  canViewCosts = false,
   product,
   barcode,
   onDone,
 }: {
   businessId: number;
+  canViewCosts?: boolean;
   product?: Product;
   barcode?: string;
   onDone: () => void;
@@ -108,7 +110,7 @@ export function ProductForm({
         );
       const form = new FormData();
       for (const [key, value] of Object.entries(values)) {
-        if (key === "initial_quantity") continue;
+        if (key === "initial_quantity" || (key === "purchase_price" && !canViewCosts)) continue;
         form.append(
           `product[${key}]`,
           key === "category_id"
@@ -202,7 +204,7 @@ export function ProductForm({
         </summary>
         <div className="advanced-fields">
           <div className="form-grid">
-            <label>
+{canViewCosts && (            <label>
               {tr("Purchase price")}
               <input
                 inputMode="decimal"
@@ -212,7 +214,7 @@ export function ProductForm({
               <small className="field-error">
                 {tr(errors.purchase_price?.message || "")}
               </small>
-            </label>
+            </label>)}
             <label>
               {tr("Low stock alert")}
               <input inputMode="decimal" {...register("low_stock_threshold")} />
@@ -300,11 +302,13 @@ export function ProductForm({
 }
 export function StockForm({
   businessId,
+  canViewCosts = false,
   product,
   direction,
   onDone,
 }: {
   businessId: number;
+  canViewCosts?: boolean;
   product?: Product;
   direction: "in" | "out";
   onDone: () => void;
@@ -352,7 +356,7 @@ export function StockForm({
                   quantity: direction === "in" ? amount : -amount,
                   movement_type:
                     direction === "in" ? "stock_in" : fd.get("reason"),
-                  unit_cost: fd.get("unit_cost") || null,
+                  ...(canViewCosts ? { unit_cost: fd.get("unit_cost") || null } : {}),
                   note: fd.get("note"),
                   idempotency_key: requestKey,
                 },
@@ -447,7 +451,7 @@ export function StockForm({
                 <option value="return_out">{tr("Return to supplier")}</option>
               </select>
             </label>
-          ) : (
+          ) : canViewCosts ? (
             <label>
               {tr("Unit cost")}
               <span className="muted">{tr("optional")}</span>
@@ -460,7 +464,7 @@ export function StockForm({
                 placeholder="0.00"
               />
             </label>
-          )}
+          ) : null}
           <label>
             {tr("Note")}
             <span className="muted">{tr("optional")}</span>

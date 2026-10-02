@@ -8,6 +8,7 @@ class Api::V1::StockMovementsController < ApplicationController
   end
   def create
     p = params.require(:stock_movement).permit(:product_id, :quantity, :movement_type, :note, :unit_cost, :idempotency_key)
+    p.delete(:unit_cost) unless costs_allowed?
     product = current_business.products.active.find(p.delete(:product_id))
     movement = Inventory::AdjustStock.call(product: product, user: current_user, **p.to_h.symbolize_keys)
     data({movement: movement_json(movement), product: product_json(product.reload)}, status: :created)

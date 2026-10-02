@@ -17,7 +17,7 @@ export type Product = {
   sku?: string;
   barcode?: string;
   selling_price: string;
-  purchase_price: string;
+  purchase_price?: string;
   current_stock: string;
   low_stock_threshold: string;
   unit: string;
@@ -41,7 +41,7 @@ export type Dashboard = {
   total_units: string;
   low_stock: number;
   out_of_stock: number;
-  inventory_value: string;
+  inventory_value?: string;
   retail_value: string;
   stock_in_today: string;
   stock_out_today: string;

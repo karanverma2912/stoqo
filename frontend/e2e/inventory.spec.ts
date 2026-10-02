@@ -127,7 +127,7 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
   ).toBe(false);
   await page.goto("/app/inventory");
   await expect(
-    page.getByPlaceholder("सामान, SKU या बारकोड खोजें…"),
+    page.getByPlaceholder("नाम, SKU या बारकोड खोजें"),
   ).toBeVisible();
   await expect(
     page.locator(".product-name").filter({ hasText: "Everyday Tee" }),

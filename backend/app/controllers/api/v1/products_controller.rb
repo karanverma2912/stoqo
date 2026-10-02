@@ -52,15 +52,21 @@ class Api::V1::ProductsController < ApplicationController
   def export
     authorize current_business, :report?, policy_class: BusinessPolicy
     csv = CSV.generate do |out|
-      out << ["Product Name", "SKU", "Barcode", "Purchase Price", "Selling Price", "Quantity", "Low Stock Threshold", "Category", "Size", "Color"]
+      headers = ["Product Name", "SKU", "Barcode", "Purchase Price", "Selling Price", "Quantity", "Low Stock Threshold", "Category", "Size", "Color"]
+      headers.delete_at(3) unless costs_allowed?
+      out << headers
       current_business.products.active.includes(:category).find_each do |p|
-        out << [p.name, p.sku, p.barcode, p.purchase_price, p.selling_price, p.current_stock, p.low_stock_threshold, p.category&.name, p.size, p.color].map { |v| v.is_a?(String) && v.match?(/\A[=+@\-\t\r]/) ? "'#{v}" : v }
+        values = [p.name, p.sku, p.barcode, p.purchase_price, p.selling_price, p.current_stock, p.low_stock_threshold, p.category&.name, p.size, p.color]
+        values.delete_at(3) unless costs_allowed?
+        out << values.map { |v| v.is_a?(String) && v.match?(/\A[=+@\-\t\r]/) ? "'#{v}" : v }
       end
     end
     send_data csv, filename: "stoqo-inventory-#{Date.current}.csv", type: "text/csv"
   end
   private
   def product_params
-    params.require(:product).permit(:name, :size, :color, :description, :sku, :barcode, :purchase_price, :selling_price, :low_stock_threshold, :unit, :status, :category_id, :image)
+    permitted = params.require(:product).permit(:name, :size, :color, :description, :sku, :barcode, :purchase_price, :selling_price, :low_stock_threshold, :unit, :status, :category_id, :image)
+    permitted.delete(:purchase_price) unless costs_allowed?
+    permitted
   end
 end

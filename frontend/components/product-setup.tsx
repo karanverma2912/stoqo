@@ -620,7 +620,7 @@ function VariantForm({
                                 onChange={(e) => edit(i, "sku", e.target.value)}
                               />
                             </label>
-                            <label>
+{["owner", "admin"].includes(business.role || "") && (                            <label>
                               {tr("Purchase price")}
                               <input
                                 type="number"
@@ -631,7 +631,7 @@ function VariantForm({
                                   edit(i, "purchase_price", e.target.value)
                                 }
                               />
-                            </label>
+                            </label>)}
                           </details>
                         </motion.div>
                       ))}

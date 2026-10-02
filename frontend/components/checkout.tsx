@@ -575,6 +575,7 @@ export function Checkout({
       >
         <p className="muted">{t.missing}</p>
         <ProductForm
+          canViewCosts={["owner", "admin"].includes(business.role || "")}
           businessId={business.id}
           barcode={barcode}
           onDone={async () => {

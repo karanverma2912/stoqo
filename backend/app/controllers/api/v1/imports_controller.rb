@@ -1,4 +1,5 @@
 class Api::V1::ImportsController < ApplicationController
+  before_action { authorize current_business, :costs?, policy_class: BusinessPolicy }
   before_action :require_write!, only: :create
   def create
     file = params.require(:file)

@@ -5,6 +5,8 @@ class ProductImportJob < ApplicationJob
     import = Import.find(id)
     import.with_lock do
       return if import.status == "completed"
+      member = import.business.business_memberships.find_by(user: import.user)
+      raise ArgumentError, "Not permitted" unless member && BusinessPolicy.new(member, import.business).costs?
       import.update!(status: "processing")
       count = 0
       errors = []

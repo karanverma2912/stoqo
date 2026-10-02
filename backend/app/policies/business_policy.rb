@@ -11,6 +11,9 @@ class BusinessPolicy
   def manage?
     %w[owner admin].include?(@role)
   end
+  def costs?
+    manage?
+  end
   def report?
     write?
   end

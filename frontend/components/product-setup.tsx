@@ -620,18 +620,22 @@ function VariantForm({
                                 onChange={(e) => edit(i, "sku", e.target.value)}
                               />
                             </label>
-{["owner", "admin"].includes(business.role || "") && (                            <label>
-                              {tr("Purchase price")}
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={r.purchase_price}
-                                onChange={(e) =>
-                                  edit(i, "purchase_price", e.target.value)
-                                }
-                              />
-                            </label>)}
+                            {["owner", "admin"].includes(
+                              business.role || "",
+                            ) && (
+                              <label>
+                                {tr("Purchase price")}
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={r.purchase_price}
+                                  onChange={(e) =>
+                                    edit(i, "purchase_price", e.target.value)
+                                  }
+                                />
+                              </label>
+                            )}
                           </details>
                         </motion.div>
                       ))}

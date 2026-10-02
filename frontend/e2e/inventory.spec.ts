@@ -178,7 +178,7 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
   await page.getByRole("button", { name: "Close", exact: true }).last().click();
   await page.getByRole("button", { name: "Close", exact: true }).last().click();
   await page.goto("/app/checkout");
-  await page.getByRole("button", { name: "Scan barcode", exact: true }).click();
+  await page.getByRole("main").getByRole("button", { name: "Scan barcode", exact: true }).click();
   await page
     .getByLabel("Scan a photo")
     .setInputFiles({

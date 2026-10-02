@@ -110,7 +110,11 @@ export function ProductForm({
         );
       const form = new FormData();
       for (const [key, value] of Object.entries(values)) {
-        if (key === "initial_quantity" || (key === "purchase_price" && !canViewCosts)) continue;
+        if (
+          key === "initial_quantity" ||
+          (key === "purchase_price" && !canViewCosts)
+        )
+          continue;
         form.append(
           `product[${key}]`,
           key === "category_id"
@@ -204,17 +208,19 @@ export function ProductForm({
         </summary>
         <div className="advanced-fields">
           <div className="form-grid">
-{canViewCosts && (            <label>
-              {tr("Purchase price")}
-              <input
-                inputMode="decimal"
-                placeholder="0.00"
-                {...register("purchase_price")}
-              />
-              <small className="field-error">
-                {tr(errors.purchase_price?.message || "")}
-              </small>
-            </label>)}
+            {canViewCosts && (
+              <label>
+                {tr("Purchase price")}
+                <input
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  {...register("purchase_price")}
+                />
+                <small className="field-error">
+                  {tr(errors.purchase_price?.message || "")}
+                </small>
+              </label>
+            )}
             <label>
               {tr("Low stock alert")}
               <input inputMode="decimal" {...register("low_stock_threshold")} />
@@ -356,7 +362,9 @@ export function StockForm({
                   quantity: direction === "in" ? amount : -amount,
                   movement_type:
                     direction === "in" ? "stock_in" : fd.get("reason"),
-                  ...(canViewCosts ? { unit_cost: fd.get("unit_cost") || null } : {}),
+                  ...(canViewCosts
+                    ? { unit_cost: fd.get("unit_cost") || null }
+                    : {}),
                   note: fd.get("note"),
                   idempotency_key: requestKey,
                 },

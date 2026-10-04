@@ -6,6 +6,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ScanLine,
+  Pause,
+  Play,
   Plus,
   Minus,
   Trash2,
@@ -27,7 +29,13 @@ import { checkoutCopy, type CheckoutLanguage } from "@/lib/checkout-copy";
 import { Sheet } from "./ui/sheet";
 import { ProductForm } from "./workspace-forms";
 const Scanner = dynamic(() => import("./scanner"), { ssr: false });
-type Line = { product: Product; quantity: string; price: string };
+import {
+  createDraft,
+  readDrafts,
+  hydrateDraft,
+  type CartLine as Line,
+  type CheckoutDraft,
+} from "@/lib/checkout-drafts";
 type Payload = {
   idempotency_key: string;
   items: { product_id: number; quantity: string; unit_price: string }[];
@@ -59,21 +67,154 @@ export function Checkout({
     [phone, setPhone] = useState(""),
     [payment, setPayment] = useState("cash"),
     [error, setError] = useState("");
+  const [held, setHeld] = useState<CheckoutDraft[]>([]);
+  const [heldOpen, setHeldOpen] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [storageError, setStorageError] = useState("");
+  const [recoveryAttempt, setRecoveryAttempt] = useState(0);
+  const draftKey = `stoqo-checkout-drafts:${userId}:${business.id}`;
   const client = useQueryClient(),
     lock = useRef(false),
     barcodeInput = useRef<HTMLInputElement>(null),
     t = checkoutCopy[lang],
     manager = business.role !== "staff",
     pendingKey = `stoqo-checkout-pending:${userId}:${business.id}`;
+  async function refreshDraft(draft: CheckoutDraft) {
+    return hydrateDraft(
+      draft,
+      async (id) => {
+        try {
+          const { data } = await api<Product & { status?: string }>(
+            `products/${id}`,
+            {},
+            business.id,
+          );
+          return data.status === "archived"
+            ? { ...data, current_stock: "0" }
+            : data;
+        } catch (e) {
+          if (!(e instanceof ApiError) || e.status !== 404) throw e;
+          return {
+            id,
+            name:
+              draft.items.find((l) => l.product_id === id)?.name ||
+              tr("Unavailable product"),
+            selling_price: "0",
+            current_stock: "0",
+            low_stock_threshold: "0",
+            unit: "units",
+            stock_status: "out",
+          };
+        }
+      },
+      manager,
+    );
+  }
+  function applyDraft(draft: CheckoutDraft, lines: Line[]) {
+    setCart(lines);
+    setDiscount(manager ? draft.discount : "");
+    setCustomer(draft.customer);
+    setPhone(draft.phone);
+    setPayment(draft.payment);
+  }
+  function clearCart() {
+    setCart([]);
+    setDiscount("");
+    setCustomer("");
+    setPhone("");
+    setPayment("cash");
+  }
+  function writeDrafts(active: CheckoutDraft | null, saved: CheckoutDraft[]) {
+    sessionStorage.setItem(
+      draftKey,
+      JSON.stringify({ version: 1, active, held: saved }),
+    );
+  }
   useEffect(() => {
-    try {
-      const p = sessionStorage.getItem(pendingKey);
-      if (p) {
-        setPending(JSON.parse(p));
-        setError(checkoutCopy.en.pending);
+    let cancelled = false;
+    setReady(false);
+    async function restore() {
+      try {
+        const p = sessionStorage.getItem(pendingKey);
+        if (p) {
+          setPending(JSON.parse(p));
+          setError(checkoutCopy.en.pending);
+        }
+        const saved = readDrafts(sessionStorage.getItem(draftKey));
+        const lines = saved.active ? await refreshDraft(saved.active) : [];
+        if (cancelled) return;
+        setHeld(saved.held);
+        if (saved.active) applyDraft(saved.active, lines);
+        setStorageError("");
+        setReady(true);
+      } catch {
+        if (!cancelled)
+          setStorageError(
+            "Could not restore checkout. Reconnect and retry; your saved bills have not been changed.",
+          );
       }
-    } catch {}
-  }, [pendingKey]);
+    }
+    void restore();
+    return () => {
+      cancelled = true;
+    };
+  }, [draftKey, pendingKey, recoveryAttempt]);
+  useEffect(() => {
+    if (!ready) return;
+    try {
+      writeDrafts(
+        cart.length
+          ? createDraft(cart, discount, customer, phone, payment)
+          : null,
+        held,
+      );
+      setStorageError("");
+    } catch {
+      setStorageError(
+        "Checkout could not be saved in this tab. Keep this page open and retry before leaving.",
+      );
+    }
+  }, [ready, cart, discount, customer, phone, payment, held, draftKey]);
+  function holdBill() {
+    if (!cart.length || pending || lock.current || held.length >= 10) return;
+    try {
+      const saved = [
+        ...held,
+        createDraft(cart, discount, customer, phone, payment),
+      ];
+      writeDrafts(null, saved);
+      setHeld(saved);
+      clearCart();
+      setConfirm(false);
+      toast.success(tr("Bill held. You can serve the next customer."));
+    } catch {
+      setStorageError("Could not hold this bill. Your cart is still here.");
+    }
+  }
+  async function resumeBill(draft: CheckoutDraft) {
+    if (pending || lock.current) return;
+    lock.current = true;
+    setBusy(true);
+    try {
+      const lines = await refreshDraft(draft);
+      const saved = held.filter((d) => d.id !== draft.id);
+      if (cart.length)
+        saved.push(createDraft(cart, discount, customer, phone, payment));
+      writeDrafts(draft, saved);
+      setHeld(saved);
+      applyDraft(draft, lines);
+      setHeldOpen(false);
+      setTab("checkout");
+      toast.success(
+        tr("Bill resumed. Check quantities and prices before completing."),
+      );
+    } catch {
+      setError(tr("Could not resume this bill. Reconnect and try again."));
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
   useEffect(() => {
     const timer = setTimeout(() => setQuery(search), 200);
     return () => clearTimeout(timer);
@@ -104,8 +245,12 @@ export function Checkout({
     Number.isFinite(total) &&
     total >= 0;
   function add(p: Product) {
-    if (pending || busy) return;
+    if (!ready || pending || busy) return;
     const current = cart.find((l) => l.product.id === p.id);
+    if (!current && cart.length >= 100) {
+      toast.error(tr("Add up to 100 different products per bill."));
+      return;
+    }
     if (
       (current ? Number(current.quantity) + 1 : 0) > Number(p.current_stock) ||
       Number(p.current_stock) <= 0
@@ -170,19 +315,22 @@ export function Checkout({
         { method: "POST", body: JSON.stringify({ sale: payload }) },
         business.id,
       );
+      // Clear the recoverable cart before removing the retry key. A storage failure
+      // must leave the same idempotency key available, never create a second sale.
+      writeDrafts(null, held);
       sessionStorage.removeItem(pendingKey);
       setPending(undefined);
       setReceipt(result.data);
-      setCart([]);
-      setDiscount("");
-      setCustomer("");
-      setPhone("");
+      clearCart();
       setConfirm(false);
       await client.invalidateQueries();
       toast.success(t.saved);
     } catch (e) {
       setError((e as Error).message);
-      if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
+      if (
+        e instanceof ApiError &&
+        [400, 401, 403, 404, 422, 429].includes(e.status)
+      ) {
         sessionStorage.removeItem(pendingKey);
         setPending(undefined);
         setConfirm(false);
@@ -195,6 +343,20 @@ export function Checkout({
       setBusy(false);
     }
   }
+  if (!ready)
+    return (
+      <div className="panel" role="status">
+        <p>{tr(storageError || "Restoring checkout…")}</p>
+        {storageError && (
+          <button
+            className="button primary"
+            onClick={() => setRecoveryAttempt((n) => n + 1)}
+          >
+            {tr("Retry")}
+          </button>
+        )}
+      </div>
+    );
   return (
     <div className="checkout-page" lang={lang}>
       <div className="page-heading">
@@ -225,6 +387,51 @@ export function Checkout({
           {t.history}
         </button>
       </div>
+      <div className="held-bill-actions">
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          className="button subtle"
+          disabled={!cart.length || busy || !!pending || held.length >= 10}
+          onClick={holdBill}
+        >
+          <Pause size={17} />
+          {tr("Hold bill")}
+        </motion.button>
+        <button
+          className="button subtle"
+          disabled={busy || !!pending}
+          onClick={() => setHeldOpen(true)}
+        >
+          <ReceiptText size={17} />
+          {tr("Held bills")} ({held.length}/10)
+        </button>
+        <small className="muted">
+          {tr(
+            "Saved in this tab for your account. Stock is checked at checkout.",
+          )}
+        </small>
+      </div>
+      {storageError && (
+        <div className="error-box" role="alert">
+          {tr(storageError)}
+          <button
+            className="button subtle"
+            onClick={() => {
+              try {
+                writeDrafts(
+                  cart.length
+                    ? createDraft(cart, discount, customer, phone, payment)
+                    : null,
+                  held,
+                );
+                setStorageError("");
+              } catch {}
+            }}
+          >
+            {tr("Retry")}
+          </button>
+        </div>
+      )}
       {error && (
         <div className="error-box" role="alert">
           {tr(error)}
@@ -339,8 +546,7 @@ export function Checkout({
                 disabled={!cart.length || busy || !!pending}
                 onClick={() => {
                   if (window.confirm(t.clearConfirm)) {
-                    setCart([]);
-                    setDiscount("");
+                    clearCart();
                   }
                 }}
               >
@@ -375,6 +581,14 @@ export function Checkout({
                           <Trash2 size={16} />
                         </button>
                       </div>
+                      {Number(l.quantity) > Number(l.product.current_stock) && (
+                        <p className="field-error" role="alert">
+                          {tr(
+                            "Only {quantity} available. Update or remove this item.",
+                            { quantity: units(l.product.current_stock) },
+                          )}
+                        </p>
+                      )}
                       <div className="checkout-line-controls">
                         <div className="quantity-control">
                           <button
@@ -559,6 +773,85 @@ export function Checkout({
           </section>
         </div>
       )}
+      <Sheet
+        open={heldOpen}
+        onClose={() => setHeldOpen(false)}
+        title={tr("Held bills")}
+      >
+        <p className="muted">
+          {tr(
+            "Resuming a bill holds your current cart automatically. Held bills do not reserve stock.",
+          )}
+        </p>
+        {!held.length && (
+          <p>
+            {tr(
+              "No held bills yet. Pause a cart when a customer needs more time.",
+            )}
+          </p>
+        )}
+        <div className="held-bill-list">
+          {held.map((draft) => (
+            <article className="held-bill-card" key={draft.id}>
+              <strong>{draft.customer || tr("Walk-in customer")}</strong>
+              <p>
+                {draft.items.length} {tr("items")} ·{" "}
+                {new Date(draft.saved_at).toLocaleString(
+                  lang === "hi" ? "hi-IN" : "en-IN",
+                )}
+              </p>
+              <p className="muted">
+                {draft.items.map((l) => l.name).join(", ")}
+              </p>
+              <div className="held-bill-actions">
+                <button
+                  className="button primary"
+                  disabled={busy || !!pending}
+                  onClick={() => resumeBill(draft)}
+                >
+                  <Play size={16} />
+                  {tr("Resume bill")}
+                </button>
+                <button
+                  className="button subtle"
+                  disabled={busy || !!pending}
+                  onClick={() => {
+                    if (
+                      !window.confirm(
+                        tr("Discard this held bill? This cannot be undone."),
+                      )
+                    )
+                      return;
+                    try {
+                      const saved = held.filter((d) => d.id !== draft.id);
+                      writeDrafts(
+                        cart.length
+                          ? createDraft(
+                              cart,
+                              discount,
+                              customer,
+                              phone,
+                              payment,
+                            )
+                          : null,
+                        saved,
+                      );
+                      setHeld(saved);
+                    } catch {
+                      setStorageError(
+                        "Could not discard this bill. Try again.",
+                      );
+                    }
+                  }}
+                >
+                  <Trash2 size={16} />
+                  {tr("Discard")}
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </Sheet>
       <Sheet open={scan} onClose={() => setScan(false)} title={t.scan}>
         <p className="muted">
           {cart.length} {t.items} · {t.cart}

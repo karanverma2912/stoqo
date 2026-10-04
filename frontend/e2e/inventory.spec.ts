@@ -96,16 +96,60 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
     .fill("STOQO-TEST-M");
   await page.getByRole("button", { name: "Add to cart", exact: true }).click();
   await page.getByLabel("Quantity Everyday Tee", { exact: true }).fill("2");
+  await page.getByRole("button", { name: "Hold bill", exact: true }).click();
+  await expect(page.locator(".checkout-lines")).not.toContainText(
+    "Everyday Tee",
+  );
+  await page.reload();
+  await page
+    .getByLabel("Scan or enter barcode", { exact: true })
+    .fill("STOQO-TEST-M");
+  await page.getByRole("button", { name: "Add to cart", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Held bills (1/10)", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Resume bill", exact: true }).click();
+  await expect(
+    page.getByLabel("Quantity Everyday Tee", { exact: true }),
+  ).toHaveValue("2");
+  await page.reload();
+  await expect(
+    page.getByLabel("Quantity Everyday Tee", { exact: true }),
+  ).toHaveValue("2");
+  await page
+    .getByRole("button", { name: "Held bills (1/10)", exact: true })
+    .click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Discard", exact: true }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  // The server completes the sale but the browser loses its response.
+  await page.route(
+    "**/api/backend/sales",
+    async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      await route.fetch();
+      await route.abort("failed");
+    },
+    { times: 1 },
+  );
+
   await page
     .getByRole("button", { name: "Complete sale & create bill" })
     .click();
   await page.getByRole("button", { name: "Confirm sale", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Try again", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+
   await expect(
     page.locator(".receipt").getByText("₹1,198.00", { exact: true }).first(),
   ).toBeVisible();
   await page.getByRole("button", { name: "Close", exact: true }).last().click();
   await page.reload();
   await page.getByRole("tab", { name: "Bills", exact: true }).click();
+  await expect(page.locator(".bill-history-row")).toHaveCount(1);
   await page.locator(".bill-history-row").first().click();
   await expect(page.locator(".receipt")).toContainText("Everyday Tee");
   await page.getByRole("button", { name: "Close", exact: true }).last().click();
@@ -125,10 +169,11 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
       () => document.documentElement.scrollWidth > innerWidth,
     ),
   ).toBe(false);
-  await page.goto("/app/inventory");
   await expect(
-    page.getByPlaceholder("नाम, SKU या बारकोड खोजें"),
+    page.getByRole("button", { name: "बिल रोकें", exact: true }),
   ).toBeVisible();
+  await page.goto("/app/inventory");
+  await expect(page.getByPlaceholder("नाम, SKU या बारकोड खोजें")).toBeVisible();
   await expect(
     page.locator(".product-name").filter({ hasText: "Everyday Tee" }),
   ).toBeVisible();
@@ -178,23 +223,22 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
   await page.getByRole("button", { name: "Close", exact: true }).last().click();
   await page.getByRole("button", { name: "Close", exact: true }).last().click();
   await page.goto("/app/checkout");
-  await page.getByRole("main").getByRole("button", { name: "Scan barcode", exact: true }).click();
   await page
-    .getByLabel("Scan a photo")
-    .setInputFiles({
-      name: "internal.svg",
-      mimeType: "image/svg+xml",
-      buffer: Buffer.from(svg),
-    });
+    .getByRole("main")
+    .getByRole("button", { name: "Scan barcode", exact: true })
+    .click();
+  await page.getByLabel("Scan a photo").setInputFiles({
+    name: "internal.svg",
+    mimeType: "image/svg+xml",
+    buffer: Buffer.from(svg),
+  });
   await expect(page.locator(".checkout-line")).toHaveCount(1);
   await expect(page.getByLabel("Scan a photo")).toBeEnabled();
-  await page
-    .getByLabel("Scan a photo")
-    .setInputFiles({
-      name: "internal.svg",
-      mimeType: "image/svg+xml",
-      buffer: Buffer.from(svg),
-    });
+  await page.getByLabel("Scan a photo").setInputFiles({
+    name: "internal.svg",
+    mimeType: "image/svg+xml",
+    buffer: Buffer.from(svg),
+  });
   await expect(
     page.getByLabel("Quantity Classic Tee", { exact: true }),
   ).toHaveValue("2");

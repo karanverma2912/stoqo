@@ -2510,3 +2510,28 @@ summary {
 .team-member > span { overflow-wrap: anywhere; min-width: 0; }
 .team-confirm { border: 1px solid var(--line); border-radius: 16px; background: var(--soft); padding: 16px; display: grid; gap: 12px; }
 .team-confirm:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+
+
+.held-bill-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
+.held-bill-actions small {
+  flex: 1 1 220px;
+}
+.held-bill-list {
+  display: grid;
+  gap: 12px;
+}
+.held-bill-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow-wrap: anywhere;
+}
+.held-bill-card p {
+  margin: 8px 0;
+}

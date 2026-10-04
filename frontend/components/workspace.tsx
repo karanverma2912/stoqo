@@ -47,6 +47,7 @@ import {
 import { api, ApiError, money, units } from "@/lib/api";
 import type { Business, Dashboard, Product, Movement, User } from "@/lib/types";
 import { Sheet } from "./ui/sheet";
+import { DailySummary } from "./daily-summary";
 import { ProductForm, StockForm, ImportForm } from "./workspace-forms";
 import { Team } from "./team";
 import { SubscriptionNotice } from "./subscription";
@@ -332,7 +333,7 @@ export function Workspace() {
           ) : pathname === "/app/activity" ? (
             <ActivityView id={id!} />
           ) : pathname === "/app/reports" ? (
-            <Reports id={id!} business={business} />
+            <Reports userId={user.data.data.id} id={id!} business={business} />
           ) : (
             <div className="empty">
               <h1>{tr("Page not found")}</h1>
@@ -1243,7 +1244,15 @@ function ActivityView({ id }: { id: number }) {
     </>
   );
 }
-function Reports({ id, business }: { id: number; business: Business }) {
+function Reports({
+  id,
+  business,
+  userId,
+}: {
+  id: number;
+  business: Business;
+  userId: number;
+}) {
   const { tr, language } = useLanguage();
   const [days, setDays] = useState("7");
   const [from, setFrom] = useState("");
@@ -1299,6 +1308,9 @@ function Reports({ id, business }: { id: number; business: Business }) {
           <option value="30">{tr("Last 30 days")}</option>
         </select>
       </div>
+      {["owner", "admin"].includes(business.role || "") && (
+        <DailySummary business={business} userId={userId} />
+      )}
       <div className="date-filters">
         <label>
           {tr("From")}

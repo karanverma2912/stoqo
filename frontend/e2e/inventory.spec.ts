@@ -193,6 +193,20 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
   await expect(
     page.getByRole("heading", { name: "अपने आंकड़े जानें", exact: false }),
   ).toBeVisible();
+  const daily = page.getByRole("region", {
+    name: "दुकान का दैनिक सारांश",
+    exact: true,
+  });
+  await expect(
+    daily.getByText("₹1,198.00", { exact: true }).first(),
+  ).toBeVisible();
+  await expect(daily.locator(".daily-transaction")).toHaveCount(1);
+  await daily.locator(".daily-transaction").first().click();
+  await expect(page.locator(".receipt")).toContainText("Everyday Tee");
+  await page
+    .getByRole("button", { name: "बंद करें", exact: true })
+    .last()
+    .click();
   await page.getByRole("button", { name: "सेटिंग्स", exact: true }).click();
   await page.getByLabel("ऐप की भाषा", { exact: true }).selectOption("en");
   await page.getByRole("button", { name: "Close", exact: true }).click();

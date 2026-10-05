@@ -24,6 +24,7 @@ Rails.application.routes.draw do
       end
       resources :stock_movements, only: [:index, :create]
       get "dashboard", to: "dashboard#show"
+      get "reports/daily_summary/export", to: "reports#daily_summary_export"
       get "reports/daily_summary", to: "reports#daily_summary"
       get "reports", to: "reports#index"
       get "activities", to: "activities#index"

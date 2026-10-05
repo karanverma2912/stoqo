@@ -14,3 +14,11 @@ The employee filter applies only to the paginated bill/return lists, not store-w
 API: GET /api/v1/reports/daily_summary?date=YYYY-MM-DD&employee_id=ID&sales_page=1&returns_page=1. Each list has 10 rows per page. Summaries use grouped SQL rather than loading every bill. Read-only subscriptions retain reporting access.
 
 After pulling, run `cd backend && bundle exec rails db:migrate` for the daily reporting indexes, then restart frontend/backend. No billing or external messaging integration is required.
+
+## CSV export and date navigation
+
+Use Previous day, Next day or Today to move between business dates. Export daily CSV downloads the full store summary for the selected day, irrespective of transaction employee filters or pagination. It includes store, employee and payment rows, with date/timezone/currency columns and a note explaining returns. It does not export individual customer bills or purchase costs.
+
+CSV headers and fixed labels follow the app's English/Hindi language setting. UTF-8 with BOM preserves Hindi names in compatible spreadsheet applications. User-controlled names are escaped against formula interpretation; trusted negative totals remain numeric.
+
+API: GET /api/v1/reports/daily_summary/export?date=YYYY-MM-DD&language=en (or hi). Owner/admin authorization and business scoping are applied again on the server. Downloads are marked private/no-store. This addition needs no new migration beyond the daily reporting indexes.

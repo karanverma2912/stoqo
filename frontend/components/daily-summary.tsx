@@ -2,7 +2,14 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw, ReceiptText } from "lucide-react";
+import {
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  ReceiptText,
+} from "lucide-react";
+import { businessToday, shiftReportDate } from "@/lib/report-date";
 import { api } from "@/lib/api";
 import { billMoney, type Sale } from "@/lib/sales";
 import type { Business, Meta } from "@/lib/types";
@@ -65,11 +72,43 @@ export function DailySummary({
   userId: number;
 }) {
   const { tr, language } = useLanguage();
-  const [date, setDate] = useState(() =>
-    new Intl.DateTimeFormat("en-CA", { timeZone: business.timezone }).format(
-      new Date(),
-    ),
-  );
+  const [date, setDate] = useState(() => businessToday(business.timezone));
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+  function chooseDate(value: string) {
+    setDate(value);
+    setSalesPage(1);
+    setReturnsPage(1);
+    setSelected(undefined);
+    setExportError("");
+  }
+  async function downloadSummary() {
+    setExporting(true);
+    setExportError("");
+    try {
+      const response = await fetch(
+        `/api/backend/reports/daily_summary/export?${new URLSearchParams({ date, language })}`,
+        {
+          headers: { "X-Business-Id": String(business.id) },
+          cache: "no-store",
+        },
+      );
+      if (!response.ok)
+        throw new Error("Could not export the summary. Please try again.");
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `stoqo-daily-summary-${date}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setExportError("Could not export the summary. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  }
   const [employee, setEmployee] = useState("");
   const [salesPage, setSalesPage] = useState(1),
     [returnsPage, setReturnsPage] = useState(1);
@@ -141,15 +180,37 @@ export function DailySummary({
           </p>
         </div>
         <div className="daily-controls">
+          <button
+            className="button subtle"
+            aria-label={tr("Previous day")}
+            disabled={!date || exporting}
+            onClick={() => chooseDate(shiftReportDate(date, -1))}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            className="button subtle"
+            onClick={() => chooseDate(businessToday(business.timezone))}
+            disabled={exporting}
+          >
+            {tr("Today")}
+          </button>
+          <button
+            className="button subtle"
+            aria-label={tr("Next day")}
+            disabled={!date || exporting}
+            onClick={() => chooseDate(shiftReportDate(date, 1))}
+          >
+            <ChevronRight size={18} />
+          </button>
           <label>
             {tr("Summary date")}
             <input
               type="date"
+              disabled={exporting}
               value={date}
               onChange={(e) => {
-                setDate(e.target.value);
-                setSalesPage(1);
-                setReturnsPage(1);
+                chooseDate(e.target.value);
               }}
             />
           </label>
@@ -163,6 +224,28 @@ export function DailySummary({
           </button>
         </div>
       </div>
+      <div className="daily-export">
+        <button
+          className="button subtle"
+          disabled={
+            !date || !d || !!query.error || query.isFetching || exporting
+          }
+          onClick={downloadSummary}
+        >
+          <Download size={17} />
+          {tr(exporting ? "Exporting summary…" : "Export daily CSV")}
+        </button>
+        <small className="muted">
+          {tr(
+            "Exports all employee and payment totals for this day. Transaction filters do not apply.",
+          )}
+        </small>
+      </div>
+      {exportError && (
+        <p className="error-box" role="alert">
+          {tr(exportError)}
+        </p>
+      )}
       {!date ? (
         <p>{tr("Choose a date to view the summary.")}</p>
       ) : query.isPending ? (

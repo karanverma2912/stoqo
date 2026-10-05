@@ -2550,3 +2550,6 @@ summary {
 .daily-transaction small { display: block; color: var(--muted); }
 .daily-transaction > strong { white-space: nowrap; }
 .daily-pager { justify-content: space-between; margin-top: 14px; }
+.daily-controls { flex-wrap: wrap; }
+.daily-export { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 12px 0 20px; }
+.daily-export small { flex: 1 1 240px; }

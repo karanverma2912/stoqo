@@ -201,6 +201,26 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
     daily.getByText("₹1,198.00", { exact: true }).first(),
   ).toBeVisible();
   await expect(daily.locator(".daily-transaction")).toHaveCount(1);
+  const exportDownload = page.waitForEvent("download");
+  await daily
+    .getByRole("button", { name: "दैनिक CSV डाउनलोड करें", exact: true })
+    .click();
+  const exported = await exportDownload;
+  expect(exported.suggestedFilename()).toMatch(
+    /^stoqo-daily-summary-\d{4}-\d{2}-\d{2}\.csv$/,
+  );
+  const stream = await exported.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+  expect(Buffer.concat(chunks).toString("utf8")).toContain("छूट के बाद बिक्री");
+  const summaryDate = daily.getByLabel("सारांश की तारीख", { exact: true });
+  const originalDate = await summaryDate.inputValue();
+  await daily.getByRole("button", { name: "पिछला दिन", exact: true }).click();
+  await expect(summaryDate).not.toHaveValue(originalDate);
+  await daily.getByRole("button", { name: "अगला दिन", exact: true }).click();
+  await expect(summaryDate).toHaveValue(originalDate);
+  await expect(daily.locator(".daily-transaction")).toHaveCount(1);
+
   await daily.locator(".daily-transaction").first().click();
   await expect(page.locator(".receipt")).toContainText("Everyday Tee");
   await page

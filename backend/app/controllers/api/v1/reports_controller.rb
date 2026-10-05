@@ -1,4 +1,11 @@
 class Api::V1::ReportsController < ApplicationController
+  def daily_summary_export
+    authorize current_business, :manage?, policy_class: BusinessPolicy
+    summary = Reports::DailySummary.new(business: current_business, date: params[:date]).call
+    csv = Reports::DailySummaryCsv.call(summary: summary, business_name: current_business.name, language: params[:language])
+    response.headers["Cache-Control"] = "private, no-store"
+    send_data csv, filename: "stoqo-daily-summary-#{summary[:date]}.csv", type: "text/csv; charset=utf-8"
+  end
   def daily_summary
     authorize current_business, :manage?, policy_class: BusinessPolicy
     report = Reports::DailySummary.new(business: current_business, date: params[:date])

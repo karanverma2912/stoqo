@@ -722,5 +722,11 @@
   "Loading bill…": "बिल आ रहा है…",
   "cash": "नकद",
   "upi": "यूपीआई",
-  "card": "कार्ड"
+  "card": "कार्ड",
+  "Previous day": "पिछला दिन",
+  "Next day": "अगला दिन",
+  "Export daily CSV": "दैनिक CSV डाउनलोड करें",
+  "Exporting summary…": "सारांश डाउनलोड हो रहा है…",
+  "Exports all employee and payment totals for this day. Transaction filters do not apply.": "इस दिन के सभी कर्मचारी और भुगतान के कुल आंकड़े डाउनलोड होंगे। लेनदेन का फ़िल्टर लागू नहीं होता।",
+  "Could not export the summary. Please try again.": "सारांश डाउनलोड नहीं हो सका। कृपया फिर कोशिश करें।"
 }

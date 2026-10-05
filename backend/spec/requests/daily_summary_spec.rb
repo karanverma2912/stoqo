@@ -1,4 +1,5 @@
 require "rails_helper"
+require "csv"
 RSpec.describe "Owner daily summary", type: :request do
   let(:owner) { create(:user, name: "Owner") }
   let(:staff) { create(:user, name: "Cashier") }
@@ -70,4 +71,43 @@ RSpec.describe "Owner daily summary", type: :request do
     get "/api/v1/reports/daily_summary", params: {date: "bad-date"}, headers: headers
     expect(response).to have_http_status(:unprocessable_entity)
   end
+  it "exports full store totals, neutralizes formula names and supports Hindi headers" do
+    business.update!(name: "=1+1")
+    staff.update!(name: "  +SUM(1,2)")
+    sell(staff, "1", "cash", "2026-10-04T08:00:00Z")
+    get "/api/v1/reports/daily_summary/export", params: {date: "2026-10-04", employee_id: owner.id}, headers: headers
+    expect(response).to have_http_status(:ok)
+    expect(response.headers["Content-Type"]).to include("text/csv")
+    expect(response.headers["Cache-Control"]).to include("no-store")
+    expect(response.headers["Content-Disposition"]).to include("stoqo-daily-summary-2026-10-04.csv")
+    rows = CSV.parse(response.body.delete_prefix("\uFEFF"), headers: true)
+    expect(rows.first["Name"]).to eq("'=1+1")
+    expect(rows.first["Sales after discounts"].to_d).to eq(100)
+    expect(rows.find { |row| row["Name"] == "'  +SUM(1,2)" }["Sales after discounts"].to_d).to eq(100)
+    expect(rows.map(&:size).uniq).to eq([13])
+    get "/api/v1/reports/daily_summary/export", params: {date: "2026-10-04", language: "hi"}, headers: headers
+    expect(response.body).to start_with("\uFEFFभाग,नाम")
+    expect(response.body).to include("नकद")
+  end
+  it "preserves negative net amounts as spreadsheet numbers" do
+    older = sell(owner, "1", "cash", "2026-10-03T08:00:00Z")
+    returned = Sales::ReturnItems.call(sale: older, user: owner, attributes: {idempotency_key: "export-return", reason: "Return", items: [{sale_item_id: older.sale_items.first.id, quantity: "1"}]})
+    returned.update_column(:created_at, Time.iso8601("2026-10-04T08:00:00Z"))
+    get "/api/v1/reports/daily_summary/export", params: {date: "2026-10-04"}, headers: headers
+    rows = CSV.parse(response.body.delete_prefix("\uFEFF"), headers: true)
+    expect(rows.first["Sales minus returns"]).to eq("-100.0")
+  end
+  it "enforces export permissions and validates the selected date" do
+    %w[staff manager].each do |role|
+      staff_member.update!(role: role)
+      get "/api/v1/reports/daily_summary/export", headers: headers(staff)
+      expect(response).to have_http_status(:forbidden)
+    end
+    other = create(:business)
+    get "/api/v1/reports/daily_summary/export", headers: headers.merge("X-Business-Id" => other.id.to_s)
+    expect(response).to have_http_status(:not_found)
+    get "/api/v1/reports/daily_summary/export", params: {date: "invalid"}, headers: headers
+    expect(response).to have_http_status(:unprocessable_entity)
+  end
+
 end

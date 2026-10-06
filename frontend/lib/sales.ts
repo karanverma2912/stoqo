@@ -12,12 +12,13 @@ export type SaleItem = {
   line_total: string;
 };
 export type SaleReturn = {
+  refund_method?: string | null;
   id: number;
   reason: string;
   amount: string;
   created_at: string;
   user_name: string;
-  items: { sale_item_id: number; quantity: string; amount: string }[];
+  items: { sale_item_id: number; quantity: string; amount: string; disposition: string }[];
 };
 export type Sale = {
   id: number;

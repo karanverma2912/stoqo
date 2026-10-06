@@ -33,6 +33,7 @@ module Reports
           sales: amount(sale_totals[user.id] || 0), discounts: amount(discounts[user.id] || 0),
           return_count: return_counts[user.id] || 0, returns_processed: amount(return_totals[user.id] || 0)
         } },
+        refund_methods: returns.group(:refund_method).sum(:amount).map { |method, total| {method: method || "unknown", amount: amount(total)} },
         payments: %w[cash upi card other].map { |method| {
           method: method, sales: amount(by_payment[method] || 0), returns: amount(returned_by_payment[method] || 0),
           net: amount((by_payment[method] || 0) - (returned_by_payment[method] || 0))

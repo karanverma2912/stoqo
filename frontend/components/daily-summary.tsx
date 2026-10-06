@@ -41,6 +41,7 @@ type Summary = {
     return_count: number;
     returns_processed: string;
   }[];
+  refund_methods: { method: string; amount: string }[];
   payments: { method: string; sales: string; returns: string; net: string }[];
   bills: {
     id: number;
@@ -329,6 +330,20 @@ export function DailySummary({
               </div>
             </section>
             <section className="panel report-panel">
+              <h3>{tr("Recorded refund methods")}</h3>
+              <p className="muted">
+                {tr(
+                  "Recorded by your team; not confirmation of a payment transfer. Older returns may have no method recorded.",
+                )}
+              </p>
+              {d.refund_methods.map((r) => (
+                <div className="report-line" key={r.method}>
+                  <span>
+                    {tr(r.method === "unknown" ? "Not recorded" : r.method)}
+                  </span>
+                  <strong>{money(r.amount)}</strong>
+                </div>
+              ))}
               <h3>{tr("Payment breakdown")}</h3>
               <p className="muted">
                 {tr(

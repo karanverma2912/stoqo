@@ -1,4 +1,5 @@
 class SaleReturn < ApplicationRecord
+  validates :refund_method, inclusion: {in: %w[cash upi card other]}, allow_nil: true
   belongs_to :sale
   belongs_to :business
   belongs_to :user

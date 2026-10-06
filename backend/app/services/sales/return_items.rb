@@ -19,15 +19,20 @@ module Sales
         items = sale.sale_items.where(id: ids).index_by(&:id)
         raise ActiveRecord::RecordNotFound unless items.size == ids.size
         products = sale.business.products.where(id: items.values.map(&:product_id)).order(:id).lock.index_by(&:id)
-        record = sale.sale_returns.create!(business: sale.business, user: user, reason: a["reason"], idempotency_key: a["idempotency_key"], request_digest: digest, amount: 0)
+        record = sale.sale_returns.create!(business: sale.business, user: user, reason: a["reason"], refund_method: a["refund_method"].presence, idempotency_key: a["idempotency_key"], request_digest: digest, amount: 0)
         total = 0.to_d
         rows.each do |row|
           item = items.fetch(Integer(row["sale_item_id"]))
           q = Checkout.decimal(row["quantity"], places: 3, positive: true)
           raise ArgumentError, "Return exceeds the unreturned quantity for #{item.name}" if q + item.returned_quantity > item.quantity
           amount = (item.line_total * (item.returned_quantity + q) / item.quantity).round(2) - (item.line_total * item.returned_quantity / item.quantity).round(2)
-          record.sale_return_items.create!(sale: sale, sale_item: item, quantity: q, amount: amount)
+          disposition = row.fetch("disposition", "sellable")
+          raise ArgumentError, "Choose sellable or damaged" unless %w[sellable damaged].include?(disposition)
+          record.sale_return_items.create!(sale: sale, sale_item: item, quantity: q, amount: amount, disposition: disposition)
           Inventory::AdjustStock.call(product: products.fetch(item.product_id), user: user, quantity: q, movement_type: "return_in", idempotency_key: "return:#{SecureRandom.uuid}", note: "Return for #{sale.number}: #{a['reason']}")
+          if disposition == "damaged"
+            Inventory::AdjustStock.call(product: products.fetch(item.product_id), user: user, quantity: -q, movement_type: "damage", idempotency_key: "return-damage:#{record.id}:#{item.id}", note: "Damaged return for #{sale.number}")
+          end
           item.update!(returned_quantity: item.returned_quantity + q)
           total += amount
         end

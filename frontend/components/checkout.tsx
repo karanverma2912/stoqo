@@ -52,7 +52,9 @@ export function Checkout({
   userId: number;
 }) {
   const { tr, language: lang } = useLanguage();
-  const [tab, setTab] = useState<"checkout" | "history">("checkout"),
+  const [tab, setTab] = useState<"checkout" | "history" | "customers">(
+      "checkout",
+    ),
     [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
     [cart, setCart] = useState<Line[]>([]),
@@ -386,6 +388,14 @@ export function Checkout({
           <ReceiptText size={18} />
           {t.history}
         </button>
+        <button
+          role="tab"
+          aria-selected={tab === "customers"}
+          className={tab === "customers" ? "selected" : ""}
+          onClick={() => setTab("customers")}
+        >
+          {tr("Customer history")}
+        </button>
       </div>
       <div className="held-bill-actions">
         <motion.button
@@ -442,7 +452,13 @@ export function Checkout({
           )}
         </div>
       )}
-      {tab === "history" ? (
+      {tab === "customers" ? (
+        <CustomerHistory
+          business={business}
+          lang={lang}
+          onSelect={setReceipt}
+        />
+      ) : tab === "history" ? (
         <BillHistory business={business} lang={lang} onSelect={setReceipt} />
       ) : (
         <div className="checkout-grid">
@@ -924,7 +940,7 @@ export function Checkout({
     </div>
   );
 }
-function BillHistory({
+function CustomerHistory({
   business,
   lang,
   onSelect,
@@ -934,23 +950,113 @@ function BillHistory({
   onSelect: (s: Sale) => void;
 }) {
   const { tr } = useLanguage();
+  const [phone, setPhone] = useState(""),
+    [selectedPhone, setSelectedPhone] = useState("");
+  return (
+    <section className="panel">
+      <h2>{tr("Customer history")}</h2>
+      <p>
+        {tr(
+          "Search by the full phone number used on the bill, including country code if provided.",
+        )}
+      </p>
+      <p className="muted">
+        {tr(
+          business.role === "staff"
+            ? "You can only see customers on your own bills."
+            : "Search purchase history across this store.",
+        )}
+      </p>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          setSelectedPhone(phone.replace(/[^0-9]/g, ""));
+        }}
+      >
+        <label>
+          {tr("Customer phone")}
+          <input
+            type="tel"
+            required
+            maxLength={30}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </label>
+        <button
+          className="button primary"
+          disabled={phone.replace(/[^0-9]/g, "").length < 6}
+        >
+          {tr("Find purchases")}
+        </button>
+      </form>
+      {selectedPhone && (
+        <BillHistory
+          key={selectedPhone}
+          business={business}
+          lang={lang}
+          onSelect={onSelect}
+          customerPhone={selectedPhone}
+        />
+      )}
+    </section>
+  );
+}
+function BillHistory({
+  customerPhone,
+  business,
+  lang,
+  onSelect,
+}: {
+  business: Business;
+  lang: CheckoutLanguage;
+  onSelect: (s: Sale) => void;
+  customerPhone?: string;
+}) {
+  const { tr } = useLanguage();
   const [page, setPage] = useState(1),
     [search, setSearch] = useState(""),
     t = checkoutCopy[lang];
   const bills = useQuery({
-    queryKey: ["bills", business.id, page, search],
+    queryKey: ["bills", business.id, page, search, customerPhone],
     queryFn: () =>
       api<Sale[]>(
-        `sales?page=${page}&q=${encodeURIComponent(search)}`,
+        `sales?page=${page}&q=${encodeURIComponent(search)}${customerPhone ? `&customer_phone=${encodeURIComponent(customerPhone)}` : ""}`,
         {},
         business.id,
       ),
   });
+  const summary = (
+    bills.data?.meta as
+      | { customer_summary?: { sales: string; returns: string; net: string } }
+      | undefined
+  )?.customer_summary;
   return (
     <section className="panel bill-history">
+      {summary && (
+        <div className="bill-totals">
+          <p>
+            {tr("Recorded purchases")}:{" "}
+            {billMoney(summary.sales, business.currency, lang)}
+          </p>
+          <p>
+            {tr("Returns processed")}:{" "}
+            {billMoney(summary.returns, business.currency, lang)}
+          </p>
+          <p>
+            {tr("Sales minus returns")}:{" "}
+            {billMoney(summary.net, business.currency, lang)}
+          </p>
+        </div>
+      )}
       <div className="checkout-cart-heading">
         <h2>{business.role === "staff" ? t.ownBills : t.allBills}</h2>
       </div>
+      {customerPhone && (
+        <p>
+          {tr("Matching bills")}: {bills.data?.meta.total || 0}
+        </p>
+      )}
       <label>
         <span className="sr-only">{t.billSearch}</span>
         <input
@@ -1040,12 +1146,15 @@ export function BillDetail({
     [returning, setReturning] = useState(false),
     [quantities, setQuantities] = useState<Record<number, string>>({}),
     [reason, setReason] = useState(""),
+    [refundMethod, setRefundMethod] = useState("cash"),
+    [dispositions, setDispositions] = useState<Record<number, string>>({}),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const returnRequest = useRef<{
       idempotency_key: string;
       reason: string;
-      items: { sale_item_id: number; quantity: string }[];
+      refund_method?: string;
+      items: { sale_item_id: number; quantity: string; disposition?: string }[];
     } | null>(null),
     [uncertain, setUncertain] = useState(false);
   const returnKey = `stoqo-return-pending:${userId}:${business.id}:${sale.id}`;
@@ -1193,6 +1302,17 @@ export function BillDetail({
             {t.refund}: {billMoney(r.amount, sale.currency, lang)}
           </strong>
           <p>{r.reason}</p>
+          <p>
+            {tr("Recorded refund method")}:{" "}
+            {tr(r.refund_method || "Not recorded")}
+          </p>
+          {r.items.map((item) => (
+            <small key={item.sale_item_id}>
+              {sale.items.find((i) => i.id === item.sale_item_id)?.name} ·{" "}
+              {units(item.quantity)} · {tr(item.disposition || "sellable")}
+              <br />
+            </small>
+          ))}
           <small>
             {t.returnedBy} {r.user_name} ·{" "}
             {new Date(r.created_at).toLocaleString(
@@ -1222,11 +1342,13 @@ export function BillDetail({
             const payload = returnRequest.current || {
               idempotency_key: crypto.randomUUID(),
               reason,
+              refund_method: refundMethod,
               items: sale.items
                 .filter((i) => Number(quantities[i.id]) > 0)
                 .map((i) => ({
                   sale_item_id: i.id,
                   quantity: quantities[i.id],
+                  disposition: dispositions[i.id] || "sellable",
                 })),
             };
             returnRequest.current = payload;
@@ -1251,7 +1373,10 @@ export function BillDetail({
               toast.success(t.refund);
             } catch (e) {
               setError((e as Error).message);
-              if (e instanceof ApiError && e.status < 500) {
+              if (
+                e instanceof ApiError &&
+                [400, 401, 403, 404, 422, 429].includes(e.status)
+              ) {
                 sessionStorage.removeItem(returnKey);
                 returnRequest.current = null;
                 setUncertain(false);
@@ -1261,7 +1386,30 @@ export function BillDetail({
             }
           }}
         >
-          <p className="muted">{t.returnHelp}</p>
+          <p className="muted">
+            {tr(
+              "Sellable items return to stock. Damaged items are recorded but do not increase available stock.",
+            )}
+          </p>
+          <label>
+            {tr("Recorded refund method")}
+            <select
+              disabled={busy || uncertain}
+              value={refundMethod}
+              onChange={(e) => setRefundMethod(e.target.value)}
+            >
+              {["cash", "upi", "card", "other"].map((m) => (
+                <option key={m} value={m}>
+                  {tr(m)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="muted">
+            {tr(
+              "Record how you refunded the customer. Stoqo does not transfer money.",
+            )}
+          </p>
           {sale.items
             .filter((i) => +i.returned_quantity < +i.quantity)
             .map((i) => (
@@ -1280,6 +1428,17 @@ export function BillDetail({
                     setQuantities({ ...quantities, [i.id]: e.target.value })
                   }
                 />
+                <select
+                  aria-label={`${tr("Item condition")} ${i.name}`}
+                  disabled={busy || uncertain}
+                  value={dispositions[i.id] || "sellable"}
+                  onChange={(e) =>
+                    setDispositions({ ...dispositions, [i.id]: e.target.value })
+                  }
+                >
+                  <option value="sellable">{tr("sellable")}</option>
+                  <option value="damaged">{tr("damaged")}</option>
+                </select>
               </label>
             ))}
           <label>

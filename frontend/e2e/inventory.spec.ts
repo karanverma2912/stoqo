@@ -96,6 +96,8 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
     .fill("STOQO-TEST-M");
   await page.getByRole("button", { name: "Add to cart", exact: true }).click();
   await page.getByLabel("Quantity Everyday Tee", { exact: true }).fill("2");
+  await page.getByLabel("Customer name (optional)").fill("Asha");
+  await page.getByLabel("Phone (optional)").fill("9876543210");
   await page.getByRole("button", { name: "Hold bill", exact: true }).click();
   await expect(page.locator(".checkout-lines")).not.toContainText(
     "Everyday Tee",
@@ -309,6 +311,100 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
       .locator(".subscription-history")
       .getByText("cancelled", { exact: true }),
   ).toBeVisible();
+  await page.goto("/app/checkout");
+  await page
+    .getByRole("tab", { name: "Customer history", exact: true })
+    .click();
+  await page.getByLabel("Customer phone", { exact: true }).fill("98765 43210");
+  await page
+    .getByRole("button", { name: "Find purchases", exact: true })
+    .click();
+  await expect(page.locator(".bill-history-row")).toHaveCount(1);
+  await page.locator(".bill-history-row").click();
+  await page.getByRole("button", { name: "Return items", exact: true }).click();
+  await page
+    .getByLabel("Recorded refund method", { exact: true })
+    .selectOption("upi");
+  await page
+    .getByLabel("Return quantity Everyday Tee", { exact: false })
+    .fill("1");
+  await page
+    .getByLabel("Item condition Everyday Tee", { exact: false })
+    .selectOption("damaged");
+  await page
+    .getByLabel("Reason for return", { exact: true })
+    .fill("Damaged packaging");
+  await page
+    .getByRole("button", { name: "Confirm return", exact: true })
+    .click();
+  await expect(page.locator(".return-record")).toContainText("upi");
+  await expect(page.locator(".return-record")).toContainText("damaged");
+  await page.getByRole("button", { name: "Close", exact: true }).last().click();
+  await page.goto("/app/restocking");
+  await page.getByRole("button", { name: "Add supplier", exact: true }).click();
+  await page.getByLabel("Supplier name", { exact: true }).fill("Local Supply");
+  await page
+    .getByRole("button", { name: "Save supplier", exact: true })
+    .click();
+  await expect(page.getByText("Supplier saved", { exact: true })).toBeVisible();
+  await page.getByLabel("Show all products to link suppliers").check();
+  await page
+    .getByLabel("Search products", { exact: true })
+    .fill("Everyday Tee");
+  await page
+    .getByLabel("Supplier Everyday Tee", { exact: true })
+    .selectOption({ label: "Local Supply" });
+  await expect(
+    page.getByLabel("Supplier Everyday Tee", { exact: true }),
+  ).toHaveValue(/\d+/);
+  await page
+    .getByRole("button", { name: "Receive stock", exact: true })
+    .click();
+  await page.getByLabel("Quantity", { exact: true }).fill("10");
+  await page.getByRole("button", { name: "Add stock", exact: true }).click();
+  await expect(
+    page.getByText("Current stock: 16 units", { exact: true }),
+  ).toBeVisible();
+  const secondShop = await page.evaluate(async () => {
+    const response = await fetch("/api/backend/businesses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        business: {
+          name: "Second Store",
+          business_type: "Retail",
+          currency: "INR",
+          timezone: "Asia/Kolkata",
+          country: "IN",
+        },
+      }),
+    });
+    return response.ok;
+  });
+  expect(secondShop).toBe(true);
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Switch business", exact: true })
+    .locator("svg")
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Second Store", exact: true })
+    .click();
+  await expect(page.locator(".workspace-picker")).toContainText("Second Store");
+  await expect(page.getByText("Local Supply", { exact: true })).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator(".workspace-picker")).toContainText("Second Store");
+  await page
+    .getByRole("button", { name: "Switch business", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Everyday Store", exact: true })
+    .click();
+  await expect(page.locator(".workspace-picker")).toContainText(
+    "Everyday Store",
+  );
   await page.screenshot({
     path: "test-results/inventory-mobile.png",
     fullPage: true,

@@ -11,6 +11,7 @@ Rails.application.routes.draw do
       post "auth/revoke_other_sessions", to: "account_security#revoke_other_sessions"
       delete "auth/logout", to: "auth#logout"
       resources :businesses, only: [:index, :create, :update]
+      resources :suppliers, only: [:index, :create, :update]
       resources :categories, only: [:index, :create]
       resources :sales, only: [:index, :show, :create] do
         member { post :return_items }

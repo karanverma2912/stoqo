@@ -1,4 +1,5 @@
 class Product < ApplicationRecord
+  belongs_to :supplier, optional: true
   belongs_to :business
   belongs_to :product_group, optional: true
   belongs_to :category, optional: true
@@ -14,6 +15,7 @@ class Product < ApplicationRecord
   validates :purchase_price, :selling_price, :low_stock_threshold, numericality: {greater_than_or_equal_to: 0, less_than: 100_000_000}
   validates :status, inclusion: {in: %w[active archived]}
   validates :unit, length: {minimum: 1, maximum: 30}
+  validate :supplier_belongs_to_business
   validate :category_belongs_to_business
   validate :safe_image
   scope :active, -> { where(status: "active") }
@@ -29,6 +31,10 @@ class Product < ApplicationRecord
     duplicate = product_group.products.where("lower(COALESCE(size, '')) = ? AND lower(COALESCE(color, '')) = ?", size.to_s.downcase, color.to_s.downcase)
     duplicate = duplicate.where.not(id: id) if persisted?
     errors.add(:base, "This size and colour already exist in the group") if duplicate.exists?
+  end
+  def supplier_belongs_to_business
+    errors.add(:supplier, "must belong to this business") if supplier && supplier.business_id != business_id
+    errors.add(:supplier, "is archived") if supplier_id_changed? && supplier&.archived?
   end
   def category_belongs_to_business
     errors.add(:category, "must belong to this business") if category && category.business_id != business_id

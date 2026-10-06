@@ -28,7 +28,7 @@ class Api::V1::ProductGroupsController < ApplicationController
     permitted
   end
   def serialize(group)
-    products = group.products.active.includes(:category, image_attachment: :blob).order(:color, :size, :id)
+    products = group.products.active.includes(:category, :supplier, image_attachment: :blob).order(:color, :size, :id)
     group.as_json(only: [:id, :name]).merge(variant_count: products.size, products: products.map { |p| product_json(p) })
   end
 end

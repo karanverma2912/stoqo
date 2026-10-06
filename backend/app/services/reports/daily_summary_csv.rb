@@ -22,6 +22,11 @@ module Reports
         summary[:payments].each do |payment|
           csv << [labels[15], translate.call(payment[:method]), nil, *context, nil, nil, nil, payment[:sales], payment[:returns], nil, payment[:net]]
         end
+        (summary[:refund_methods] || []).each do |refund|
+          section = language == "hi" ? "दर्ज रिफंड का तरीका" : "Recorded refund method"
+          method = refund[:method] == "unknown" ? (language == "hi" ? "दर्ज नहीं है" : "Not recorded") : translate.call(refund[:method])
+          csv << [section, method, nil, *context, nil, nil, nil, nil, refund[:amount], nil, nil]
+        end
         csv << [labels[17], labels[18], nil, *context, *Array.new(7)]
       end
     end

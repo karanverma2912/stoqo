@@ -70,7 +70,7 @@ class ApplicationController < ActionController::API
   end
   def user_json(user) = user.as_json(only: [:id, :name, :email])
   def product_json(product)
-    product.as_json.except("business_id").merge("display_name" => product.display_name, "stock_status" => product.stock_status, "category_name" => product.category&.name,
+    product.as_json.except("business_id").merge("display_name" => product.display_name, "stock_status" => product.stock_status, "category_name" => product.category&.name, "supplier_name" => product.supplier&.name,
       "image_url" => product.image.attached? ? "/api/backend/products/#{product.id}/image?business_id=#{product.business_id}" : nil)
   end
   def movement_json(movement)

@@ -8,6 +8,7 @@ const allowed = new Set([
   "product_groups",
   "sales",
   "categories",
+  "suppliers",
   "stock_movements",
   "dashboard",
   "reports",

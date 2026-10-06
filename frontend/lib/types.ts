@@ -23,6 +23,8 @@ export type Product = {
   unit: string;
   stock_status: "healthy" | "low" | "out";
   product_group_id?: number;
+  supplier_id?: number;
+  supplier_name?: string;
   category_id?: number;
   category_name?: string;
   image_url?: string;

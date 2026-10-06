@@ -51,7 +51,7 @@ export const checkoutCopy = {
     returnAction: "Return items",
     returnQty: "Return quantity",
     reason: "Reason for return",
-    returnConfirm: "Confirm return & restock",
+    returnConfirm: "Confirm return",
     returnHelp:
       "Only return resellable items here. Refund payment separately; this records the amount and restores stock.",
     refund: "Refund recorded",
@@ -134,7 +134,7 @@ export const checkoutCopy = {
     returnAction: "सामान वापस लें",
     returnQty: "वापसी की मात्रा",
     reason: "वापसी का कारण",
-    returnConfirm: "वापसी दर्ज करें और स्टॉक जोड़ें",
+    returnConfirm: "वापसी दर्ज करें",
     returnHelp:
       "यहां केवल दोबारा बेचने योग्य सामान वापस लें। पैसे अलग से लौटाएं; यहां रकम दर्ज होगी और स्टॉक बढ़ेगा।",
     refund: "वापसी की रकम दर्ज हुई",

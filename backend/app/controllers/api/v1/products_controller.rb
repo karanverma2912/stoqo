@@ -3,7 +3,7 @@ class Api::V1::ProductsController < ApplicationController
   before_action :require_stock!, only: :create
   before_action :require_write!, only: [:update, :generate_barcode]
   def index
-    scope = current_business.products.active.includes(:category, image_attachment: :blob)
+    scope = current_business.products.active.includes(:category, :supplier, image_attachment: :blob)
     if params[:q].present?
       q = "%#{Product.sanitize_sql_like(params[:q].to_s.first(200))}%"
       scope = scope.where("products.name ILIKE :q OR sku ILIKE :q OR barcode ILIKE :q OR size ILIKE :q OR color ILIKE :q", q: q)
@@ -12,6 +12,8 @@ class Api::V1::ProductsController < ApplicationController
     scope = scope.where(product_group_id: params[:product_group_id]) if params[:product_group_id].present?
     scope = scope.where(barcode: params[:barcode]) if params[:barcode].present?
     scope = scope.where(category_id: params[:category_id]) if params[:category_id].present?
+    scope = scope.where("current_stock <= low_stock_threshold") if params[:filter] == "restock"
+    scope = scope.where(supplier_id: params[:supplier_id]) if params[:supplier_id].present?
     scope = scope.low if params[:filter] == "low"
     scope = scope.out if params[:filter] == "out"
     order = {"name" => "name ASC", "stock" => "current_stock ASC", "newest" => "created_at DESC", "price" => "selling_price DESC"}.fetch(params[:sort], "name ASC")
@@ -65,7 +67,8 @@ class Api::V1::ProductsController < ApplicationController
   end
   private
   def product_params
-    permitted = params.require(:product).permit(:name, :size, :color, :description, :sku, :barcode, :purchase_price, :selling_price, :low_stock_threshold, :unit, :status, :category_id, :image)
+    permitted = params.require(:product).permit(:name, :size, :color, :description, :sku, :barcode, :purchase_price, :selling_price, :low_stock_threshold, :unit, :status, :category_id, :supplier_id, :image)
+    permitted.delete(:supplier_id) unless BusinessPolicy.new(pundit_user, current_business).write?
     permitted.delete(:purchase_price) unless costs_allowed?
     permitted
   end

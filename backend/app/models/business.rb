@@ -5,6 +5,7 @@ class Business < ApplicationRecord
   has_many :sale_returns
   has_many :product_groups
   has_many :product_setup_batches
+  has_many :suppliers
   has_many :products
   has_many :categories
   has_many :stock_movements

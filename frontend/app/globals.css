@@ -2553,3 +2553,10 @@ summary {
 .daily-controls { flex-wrap: wrap; }
 .daily-export { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 12px 0 20px; }
 .daily-export small { flex: 1 1 240px; }
+.workspace-picker { width: 100%; text-align: left; cursor: pointer; }
+.workspace-picker .workspace-name { flex: 1; min-width: 0; }
+.workspace-picker .workspace-name strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.workspace-picker:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+.restock-page .panel { margin-bottom: 20px; padding: 20px; }
+.restock-page .daily-employee { display: flex; flex-direction: column; gap: 8px; }
+.restock-page .daily-employee p { margin: 0; overflow-wrap: anywhere; }

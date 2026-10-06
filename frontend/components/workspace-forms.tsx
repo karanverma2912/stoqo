@@ -308,12 +308,14 @@ export function ProductForm({
 }
 export function StockForm({
   businessId,
+  initialNote = "",
   canViewCosts = false,
   product,
   direction,
   onDone,
 }: {
   businessId: number;
+  initialNote?: string;
   canViewCosts?: boolean;
   product?: Product;
   direction: "in" | "out";
@@ -478,6 +480,7 @@ export function StockForm({
             <span className="muted">{tr("optional")}</span>
             <textarea
               name="note"
+              defaultValue={initialNote}
               maxLength={1000}
               rows={3}
               placeholder={

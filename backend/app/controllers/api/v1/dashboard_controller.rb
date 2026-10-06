@@ -8,7 +8,7 @@ class Api::V1::DashboardController < ApplicationController
       out_of_stock: products.out.count, inventory_value: products.sum("current_stock * purchase_price"),
       retail_value: products.sum("current_stock * selling_price"),
       stock_in_today: movements.where("quantity > 0").sum(:quantity), stock_out_today: -movements.where("quantity < 0").sum(:quantity),
-      low_products: products.where("current_stock <= low_stock_threshold").order(:current_stock).includes(:category, image_attachment: :blob).limit(6).map { |p| product_json(p) },
+      low_products: products.where("current_stock <= low_stock_threshold").order(:current_stock).includes(:category, :supplier, image_attachment: :blob).limit(6).map { |p| product_json(p) },
       recent_movements: current_business.stock_movements.includes(:product, :user).order(occurred_at: :desc).limit(6).map { |m| movement_json(m) }})
   end
 end

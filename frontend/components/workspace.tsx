@@ -65,6 +65,9 @@ const Scanner = dynamic(() => import("./scanner"), {
 const ProductSetup = dynamic(() =>
   import("./product-setup").then((m) => m.ProductSetup),
 );
+const Restocking = dynamic(() =>
+  import("./restocking").then((m) => m.Restocking),
+);
 const Checkout = dynamic(() => import("./checkout").then((m) => m.Checkout));
 const nav = [
   { label: "Overview", path: "/app", icon: House },
@@ -81,8 +84,10 @@ export function Workspace() {
   const { resolvedTheme, setTheme } = useTheme();
   const [businessId, setBusinessId] = useState<number>();
   useEffect(() => {
-    const saved = localStorage.getItem("stoqo_business");
-    if (saved) setBusinessId(Number(saved));
+    try {
+      const saved = localStorage.getItem("stoqo_business");
+      if (saved) setBusinessId(Number(saved));
+    } catch {}
   }, []);
   const [modal, setModal] = useState("");
   const [selected, setSelected] = useState<Product>();
@@ -187,31 +192,20 @@ export function Workspace() {
           </span>
           stoqo.
         </Link>
-        <div className="workspace-picker">
+        <button
+          type="button"
+          className="workspace-picker"
+          aria-label={tr("Switch business")}
+          aria-haspopup="dialog"
+          onClick={() => open("businesses")}
+        >
           <span className="workspace-avatar">{business.name[0]}</span>
-          <div>
+          <span className="workspace-name">
             <small>{tr("YOUR WORKSPACE")}</small>
-            <select
-              aria-label={tr("Switch business")}
-              value={id}
-              onChange={(e) => {
-                setBusinessId(Number(e.target.value));
-                close();
-                client.removeQueries({
-                  predicate: (q) =>
-                    !["me", "businesses"].includes(String(q.queryKey[0])),
-                });
-              }}
-            >
-              {businesses.data?.data.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <strong>{business.name}</strong>
+          </span>
           <ChevronDown size={15} />
-        </div>
+        </button>
         <span className="nav-label">{tr("WORKSPACE")}</span>
         <nav>
           {nav.map((n) => (
@@ -318,6 +312,8 @@ export function Workspace() {
             <Inventory id={id!} business={business} open={open} />
           ) : pathname === "/app/subscription" ? (
             <SubscriptionPage key={id} business={business} />
+          ) : pathname === "/app/restocking" ? (
+            <Restocking business={business} />
           ) : pathname === "/app/product-setup" ? (
             <ProductSetup
               key={id}
@@ -395,6 +391,7 @@ export function Workspace() {
               import: tr("Bring your inventory"),
               settings: tr("Your workspace"),
               notifications: tr("Your updates"),
+              businesses: tr("Switch business"),
               more: tr("A little more"),
             } as Record<string, string | undefined>
           )[modal] || "Stoqo"
@@ -553,6 +550,37 @@ export function Workspace() {
             )}
           </div>
         )}
+        {modal === "businesses" && (
+          <div className="more-menu">
+            {businesses.data?.data.map((b) => (
+              <button
+                key={b.id}
+                aria-pressed={b.id === id}
+                onClick={() => {
+                  setBusinessId(b.id);
+                  try {
+                    localStorage.setItem("stoqo_business", String(b.id));
+                  } catch {}
+                  close();
+                  setSelected(undefined);
+                  setBarcode("");
+                  setCommand("");
+                  void client.cancelQueries({
+                    predicate: (q) =>
+                      !["me", "businesses"].includes(String(q.queryKey[0])),
+                  });
+                  client.removeQueries({
+                    predicate: (q) =>
+                      !["me", "businesses"].includes(String(q.queryKey[0])),
+                  });
+                }}
+              >
+                <span>{b.name}</span>
+                {b.id === id && <span>{tr("Selected")}</span>}
+              </button>
+            ))}
+          </div>
+        )}
         {modal === "settings" && (
           <SettingsView
             business={business}
@@ -567,6 +595,20 @@ export function Workspace() {
         )}
         {modal === "more" && (
           <div className="more-menu">
+            <button onClick={() => open("businesses")}>
+              <ChevronDown />
+              {tr("Switch business")}
+            </button>
+            {["owner", "admin", "manager"].includes(business.role || "") && (
+              <button
+                onClick={() => {
+                  router.push("/app/restocking");
+                  close();
+                }}
+              >
+                {tr("Suppliers & restocking")}
+              </button>
+            )}
             <button
               onClick={() => {
                 router.push("/app/reports");
@@ -910,6 +952,11 @@ function Inventory({
           <p>{tr("A home for every product, big or small.")}</p>
         </div>
         <div className="heading-actions">
+          {["owner", "admin", "manager"].includes(business.role || "") && (
+            <Link className="button subtle" href="/app/restocking">
+              {tr("Suppliers & restocking")}
+            </Link>
+          )}
           <Link className="button subtle" href="/app/product-setup">
             <Layers3 size={17} />
             {tr("Sizes & labels")}

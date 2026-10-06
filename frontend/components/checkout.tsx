@@ -1395,6 +1395,7 @@ export function BillDetail({
             {tr("Recorded refund method")}
             <select
               disabled={busy || uncertain}
+              aria-label={tr("Recorded refund method")}
               value={refundMethod}
               onChange={(e) => setRefundMethod(e.target.value)}
             >

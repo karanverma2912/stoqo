@@ -83,11 +83,13 @@ export function Workspace() {
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
   const [businessId, setBusinessId] = useState<number>();
+  const [businessPreferenceLoaded, setBusinessPreferenceLoaded] = useState(false);
   useEffect(() => {
     try {
       const saved = localStorage.getItem("stoqo_business");
       if (saved) setBusinessId(Number(saved));
     } catch {}
+    setBusinessPreferenceLoaded(true);
   }, []);
   const [modal, setModal] = useState("");
   const [selected, setSelected] = useState<Product>();
@@ -108,6 +110,14 @@ export function Workspace() {
     businesses.data?.data.find((b) => b.id === businessId) ||
     businesses.data?.data[0];
   const id = business?.id;
+  useEffect(() => {
+    if (!businessPreferenceLoaded || !id) return;
+    // Persist the initial/fallback shop too, so membership ordering cannot switch it.
+    setBusinessId(id);
+    try {
+      localStorage.setItem("stoqo_business", String(id));
+    } catch {}
+  }, [id, businessPreferenceLoaded]);
   useEffect(() => {
     if (user.error instanceof ApiError && user.error.status === 401)
       router.replace("/login");

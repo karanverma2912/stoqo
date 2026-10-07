@@ -394,6 +394,7 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
   });
   expect(secondShop).toBe(true);
   await page.reload();
+  await expect(page.locator(".workspace-picker")).toContainText("Everyday Store");
   await page
     .getByRole("button", { name: "Switch business", exact: true })
     .locator("svg")

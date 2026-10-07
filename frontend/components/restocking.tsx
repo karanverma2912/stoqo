@@ -23,6 +23,7 @@ export function Restocking({ business }: { business: Business }) {
   const [page, setPage] = useState(1),
     [supplierPage, setSupplierPage] = useState(1),
     [supplierId, setSupplierId] = useState("");
+  const [supplierName, setSupplierName] = useState("");
   const [allProducts, setAllProducts] = useState(false),
     [search, setSearch] = useState(""),
     [supplierSearch, setSupplierSearch] = useState("");
@@ -167,6 +168,9 @@ export function Restocking({ business }: { business: Business }) {
                     className="button subtle"
                     onClick={() => {
                       setSupplierId(String(s.id));
+                      setSupplierName(s.name);
+                      setAllProducts(true);
+                      setSearch("");
                       setPage(1);
                     }}
                   >
@@ -232,15 +236,19 @@ export function Restocking({ business }: { business: Business }) {
             {tr("Show all products to link suppliers")}
           </label>
           {supplierId && (
-            <button
-              className="button subtle"
-              onClick={() => {
-                setSupplierId("");
-                setPage(1);
-              }}
-            >
-              {tr("Clear supplier filter")}
-            </button>
+            <div role="status">
+              <span>{tr("Supplier")}: {suppliers.data?.data.find((s) => String(s.id) === supplierId)?.name || supplierName}</span>
+              <button
+                className="button subtle"
+                onClick={() => {
+                  setSupplierId("");
+                  setSupplierName("");
+                  setPage(1);
+                }}
+              >
+                {tr("Clear supplier filter")}
+              </button>
+            </div>
           )}
         </div>
         {products.isPending ? (
@@ -294,7 +302,11 @@ export function Restocking({ business }: { business: Business }) {
               ))}
             </div>
             {!products.data.data.length && (
-              <p>{tr("Everything in this selection is stocked.")}</p>
+              <p>
+                {tr(allProducts || search
+                  ? "No products match these filters."
+                  : "Everything in this selection is stocked.")}
+              </p>
             )}
             <div className="daily-pager">
               <button

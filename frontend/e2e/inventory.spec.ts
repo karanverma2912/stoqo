@@ -365,6 +365,17 @@ test("owner onboards, updates stock and sees persisted ledger on mobile", async 
   await expect(
     page.getByText("Current stock: 16 units", { exact: true }),
   ).toBeVisible();
+  // Supplier navigation must include healthy stock and clear stale search filters.
+  await page.getByLabel("Show all products to link suppliers").uncheck();
+  await page.getByLabel("Search products", { exact: true }).fill("No matching item");
+  await expect(page.getByText("No products match these filters.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "View products", exact: true }).click();
+  await expect(page.getByLabel("Show all products to link suppliers")).toBeChecked();
+  await expect(page.getByLabel("Search products", { exact: true })).toHaveValue("");
+  await expect(page.getByText("Current stock: 16 units", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Supplier: Local Supply" })).toBeVisible();
+  await page.getByRole("button", { name: "Clear supplier filter", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Clear supplier filter", exact: true })).toHaveCount(0);
   const secondShop = await page.evaluate(async () => {
     const response = await fetch("/api/backend/businesses", {
       method: "POST",

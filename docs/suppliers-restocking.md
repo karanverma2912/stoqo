@@ -2,7 +2,7 @@
 
 Open Inventory → Suppliers & restocking (also available in More). Owners/admins/managers can add or edit supplier contact details, archive/reactivate suppliers, and link products. Only the supplier name is required. Archived suppliers retain existing product links but cannot be newly assigned.
 
-The restock list includes products at or below their low-stock threshold, including zero-stock products. Search, supplier filtering and pagination are supported. Show all products allows linking products that already have healthy stock. The supplier list is searchable and paginated; choose from the currently displayed suppliers.
+The restock list includes products at or below their low-stock threshold, including zero-stock products. Search, supplier filtering and pagination are supported. Show all products allows linking products that already have healthy stock. View products opens all products linked to that supplier, clears the previous product search, and displays the selected supplier beside the clear-filter action. Product searches with no matches use a separate empty state from a fully stocked list. The supplier list is searchable and paginated; choose from the currently displayed suppliers.
 
 Receive stock opens the existing stock-in flow, with the selected product and a supplier note. Quantity is the actual delivered amount. Purchase/unit costs remain owner/admin-only. Each delivery uses the existing stock service, audit history and idempotency protection. This release does not create purchase orders or send messages to suppliers.
 

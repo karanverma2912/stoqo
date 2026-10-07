@@ -760,6 +760,7 @@
   "Restock list": "स्टॉक भरने की सूची",
   "Includes products at or below their low-stock alert. Receive the quantity actually delivered; this list is not a purchase order.": "कम स्टॉक की सीमा पर या उससे कम सामान शामिल हैं। वास्तव में मिली मात्रा दर्ज करें; यह खरीद ऑर्डर नहीं है।",
   "Show all products to link suppliers": "सप्लायर जोड़ने के लिए सभी सामान दिखाएं",
+  "No products match these filters.": "इन फ़िल्टर से कोई सामान नहीं मिला।",
   "Clear supplier filter": "सप्लायर फ़िल्टर हटाएं",
   "Current stock": "मौजूदा स्टॉक",
   "Supplier": "सप्लायर",

@@ -1,5 +1,4 @@
 require Rails.root.join("lib/mail_providers/resend_delivery")
-ActionMailer::Base.add_delivery_method :resend, MailProviders::ResendDelivery
 Rails.application.configure do
   config.action_mailer.delivery_method = Rails.env.production? ? (ENV["RESEND_API_KEY"].present? ? :resend : :smtp) : :test
   config.action_mailer.raise_delivery_errors = true
@@ -12,3 +11,5 @@ Rails.application.configure do
   }
   config.action_mailer.default_options = {from: ENV.fetch("MAIL_FROM", "Stoqo <no-reply@example.invalid>")}
 end
+
+ActiveSupport.on_load(:action_mailer) { add_delivery_method :resend, MailProviders::ResendDelivery }

@@ -1,6 +1,6 @@
 require "net/smtp"
 class AccountEmailJob < ApplicationJob
-  retry_on Net::SMTPError, MailProviders::DeliveryError, IOError, Timeout::Error, wait: :polynomially_longer, attempts: 5
+  retry_on Net::SMTPError, MailProviders::DeliveryError, SystemCallError, OpenSSL::SSL::SSLError, IOError, Timeout::Error, wait: :polynomially_longer, attempts: 5
   discard_on ActiveRecord::RecordNotFound
   def perform(user_id, purpose, encrypted_token)
     user = User.find(user_id)

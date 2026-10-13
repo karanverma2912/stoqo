@@ -17,7 +17,7 @@ module MailProviders
       request.body = JSON.generate(payload)
       response = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 5, read_timeout: 15) { |http| http.request(request) }
       raise DeliveryError, "Email delivery unavailable (#{response.code})" unless response.is_a?(Net::HTTPSuccess)
-    rescue IOError, Timeout::Error, SocketError, OpenSSL::SSL::SSLError
+    rescue SystemCallError, IOError, Timeout::Error, SocketError, OpenSSL::SSL::SSLError
       raise DeliveryError, "Could not reach the email provider"
     end
   end

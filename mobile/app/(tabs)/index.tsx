@@ -3,7 +3,7 @@ import { View, Text, RefreshControl, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../lib/auth";
-import { api, money, units } from "../../lib/api";
+import { api, units } from "../../lib/api";
 import { permissions } from "../../lib/permissions";
 import { usePreferences } from "../../lib/preferences";
 import {

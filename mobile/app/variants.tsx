@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { router } from "expo-router";
 import { useDurableWrite } from "../lib/durable-write";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, post } from "../lib/api";
+import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { printLabels } from "../lib/barcode-labels";
 import {

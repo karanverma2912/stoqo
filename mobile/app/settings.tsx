@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Linking, View } from "react-native";
+import { Linking } from "react-native";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, patch, post, saveSession } from "../lib/api";

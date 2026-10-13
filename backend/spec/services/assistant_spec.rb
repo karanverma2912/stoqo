@@ -43,9 +43,18 @@ RSpec.describe "Store assistant" do
   end
 
   it "does not permit a demoted manager to confirm a pending invitation" do
+    allow(EmailDelivery).to receive(:configured?).and_return(true)
     tools(owner).call("propose_invitation", {email: "invitee@example.test", role: "admin"})
     owner_member.update!(role: "manager")
     expect { Assistant::ConfirmAction.call(action: AssistantAction.last, user: owner) }.to raise_error(Pundit::NotAuthorizedError)
+    expect(business.team_invitations.count).to eq(0)
+  end
+
+  it "does not create an unusable invitation when automatic email is unavailable" do
+    allow(EmailDelivery).to receive(:configured?).and_return(false)
+    expect(tools(owner).declarations.map { |d| d[:name] }).not_to include("propose_invitation")
+    action = business.assistant_actions.create!(user: owner, kind: "invite_employee", payload: {email: "invitee@example.test", role: "staff"}, expires_at: 10.minutes.from_now)
+    expect { Assistant::ConfirmAction.call(action: action, user: owner) }.to raise_error(ArgumentError, /email/)
     expect(business.team_invitations.count).to eq(0)
   end
 

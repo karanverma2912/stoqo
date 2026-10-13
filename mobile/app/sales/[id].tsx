@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useDurableWrite } from "../../lib/durable-write";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, money, post, units, ApiError } from "../../lib/api";
+import { api, money, units } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { permissions } from "../../lib/permissions";
 import { shareReceipt } from "../../lib/receipts";

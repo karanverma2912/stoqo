@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Share, View } from "react-native";
+import { Share } from "react-native";
 import * as Linking from "expo-linking";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, patch, post } from "../lib/api";
@@ -16,9 +16,8 @@ import {
   Row,
   Screen,
   confirm,
-  styles,
 } from "../components/ui";
-type Team = {
+type TeamResponse = {
   members: {
     id: number;
     role: string;
@@ -47,7 +46,7 @@ export default function Team() {
     [notice, setNotice] = useState("");
   const result = useQuery({
     queryKey: ["store", business?.id, "team"],
-    queryFn: () => api<Team>("team_members", {}, business?.id),
+    queryFn: () => api<TeamResponse>("team_members", {}, business?.id),
     enabled: !!business,
   });
   async function run(action: () => Promise<void>) {

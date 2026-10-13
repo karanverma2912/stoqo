@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import * as Linking from "expo-linking";
 import { router, useLocalSearchParams } from "expo-router";
 import { api, post } from "../lib/api";
@@ -18,12 +18,15 @@ export default function Verify() {
     { user, refresh } = useAuth();
   const [error, setError] = useState(""),
     [done, setDone] = useState(false);
+  const attempted = useRef<string | null>(null);
+  const signedIn = !!user;
   useEffect(() => {
     let token = params.token ?? "";
     try {
       if (!token && url) token = tokenFromLink(url);
     } catch {}
-    if (!token) return;
+    if (!token || attempted.current === token) return;
+    attempted.current = token;
     void Promise.resolve()
       .then(() => {
         if (!validToken(token))
@@ -31,11 +34,11 @@ export default function Verify() {
         return api("auth/verify_email", post({ token }));
       })
       .then(async () => {
-        if (user) await refresh();
+        if (signedIn) await refresh();
         setDone(true);
       })
       .catch((e) => setError(e.message));
-  }, [params.token, url]);
+  }, [params.token, url, refresh, signedIn]);
   return (
     <Screen>
       <Heading title="Email verification" />

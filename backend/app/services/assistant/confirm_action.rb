@@ -19,6 +19,7 @@ module Assistant
           movement = Inventory::AdjustStock.call(product: product, user: user, quantity: amount, movement_type: a.fetch("movement_type"), idempotency_key: "ai-action:#{action.id}", note: "Confirmed Stoqo assistant task")
           {message: "Stock updated", movement_id: movement.id, product_id: product.id, current_stock: product.reload.current_stock.to_s("F")}
         when "invite_employee"
+          raise ArgumentError, "Automatic email is unavailable. Use Your team to create a shareable invitation." unless EmailDelivery.configured?
           Team::Invite.call(business: business, user: user, attributes: a.slice("email", "role")).except(:token).merge(message: "Invitation created")
         when "create_sale"
           sale = Sales::Checkout.call(business: business, user: user, attributes: {items: a.fetch("items").map { |i| i.slice("product_id", "quantity", "unit_price") }, payment_method: a.fetch("payment_method"), discount: "0", idempotency_key: "ai-sale:#{action.id}"})

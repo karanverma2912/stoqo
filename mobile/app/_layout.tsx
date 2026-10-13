@@ -30,7 +30,7 @@ const queryClient = new QueryClient({
 });
 function Navigation() {
   const { ready, user, error, refresh, businesses } = useAuth(),
-    { colors, theme } = usePreferences(),
+    { colors } = usePreferences(),
     segments = useSegments(),
     state = useRootNavigationState();
   useEffect(() => {
@@ -39,19 +39,20 @@ function Navigation() {
     );
     return () => listener.remove();
   }, []);
+  const signedIn = !!user;
+  const section = segments[0] as string;
   useEffect(() => {
     if (!ready || !state?.key) return;
     const publicRoutes = ["auth", "join", "verify", "reset-password"];
-    const section = segments[0] as string;
-    if (!user && !publicRoutes.includes(section)) router.replace("/auth");
+    if (!signedIn && !publicRoutes.includes(section)) router.replace("/auth");
     else if (
-      user &&
+      signedIn &&
       businesses.length === 0 &&
       !publicRoutes.includes(section) &&
       section !== "onboarding"
     )
       router.replace("/onboarding");
-  }, [ready, user?.id, businesses.length, state?.key, segments.join("/")]);
+  }, [ready, signedIn, businesses.length, state?.key, section]);
   if (!ready)
     return (
       <Screen>

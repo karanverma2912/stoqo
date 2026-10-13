@@ -37,7 +37,7 @@ export default function TabsLayout() {
       received.remove();
       tapped.remove();
     };
-  }, [businesses.map((b) => b.id).join(",")]);
+  }, [businesses, business?.id, cache, selectBusiness]);
   const icon = (glyph: string) =>
     function TabIcon({ color }: { color: ColorValue }) {
       return (

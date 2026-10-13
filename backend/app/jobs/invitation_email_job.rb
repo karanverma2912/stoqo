@@ -1,6 +1,8 @@
 require "net/smtp"
 class InvitationEmailJob < ApplicationJob
-  retry_on Net::SMTPError, MailProviders::DeliveryError, SystemCallError, OpenSSL::SSL::SSLError, IOError, Timeout::Error, wait: :polynomially_longer, attempts: 5
+  retry_on Net::SMTPError, MailProviders::DeliveryError, SystemCallError, OpenSSL::SSL::SSLError, IOError, Timeout::Error, wait: :polynomially_longer, attempts: 5 do |job, _error|
+    TeamInvitation.where(id: job.arguments.first, accepted_at: nil, revoked_at: nil, email_sent_at: nil).update_all(email_status: "failed")
+  end
   discard_on ActiveRecord::RecordNotFound
   def perform(id, encrypted_token)
     invitation = TeamInvitation.find(id)

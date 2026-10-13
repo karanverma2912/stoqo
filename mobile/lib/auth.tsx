@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import * as SecureStore from "expo-secure-store";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -32,15 +38,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user, setUser] = useState<User | null>(null),
     [businesses, setBusinesses] = useState<Business[]>([]),
     [business, setBusiness] = useState<Business | null>(null);
-  async function clear() {
+  const clear = useCallback(async () => {
     await saveSession(null);
     cache.clear();
     setUser(null);
     setBusinesses([]);
     setBusiness(null);
     await SecureStore.deleteItemAsync("stoqo.selected-store");
-  }
-  async function refresh() {
+  }, [cache]);
+  const refresh = useCallback(async () => {
     const me = await api<User>("auth/me");
     setUser(me.data);
     const stores = (await api<Business[]>("businesses")).data;
@@ -52,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       stores.find((b) => String(b.id) === saved) ?? stores[0] ?? null,
     );
     setError("");
-  }
+  }, [cache]);
   useEffect(() => {
     setExpiredHandler(() => {
       void clear();
@@ -67,20 +73,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setReady(true);
       }
     })();
-  }, []);
+  }, [clear, refresh]);
   async function loginResult(result: { user: User; token: string }) {
     cache.clear();
     await saveSession(result.token);
     setUser(result.user);
     await refresh();
   }
-  async function selectBusiness(id: number) {
-    if (!businesses.some((b) => b.id === id))
-      throw new Error("Store access is no longer available");
-    await SecureStore.setItemAsync("stoqo.selected-store", String(id));
-    cache.clear();
-    setBusiness(businesses.find((b) => b.id === id) ?? null);
-  }
+  const selectBusiness = useCallback(
+    async (id: number) => {
+      if (!businesses.some((b) => b.id === id))
+        throw new Error("Store access is no longer available");
+      await SecureStore.setItemAsync("stoqo.selected-store", String(id));
+      cache.clear();
+      setBusiness(businesses.find((b) => b.id === id) ?? null);
+    },
+    [businesses, cache],
+  );
   async function acceptInvitation(token: string) {
     const result = await api<{ business_id: number }>(
       "team_invitations/accept",

@@ -19,7 +19,7 @@ module Assistant
         rows << declaration("propose_stock_change", "Prepare a stock in, stock out or damage change for the user to confirm; NEVER execute it", {product_id: {type: "INTEGER"}, quantity: {type: "STRING", description: "Positive decimal quantity"}, movement_type: {type: "STRING", enum: %w[stock_in stock_out damage]}}, %w[product_id quantity movement_type])
         rows << declaration("propose_sale", "Prepare a bill at saved selling prices for confirmation; NEVER execute it", {items: {type: "ARRAY", items: {type: "OBJECT", properties: {product_id: {type: "INTEGER"}, quantity: {type: "STRING"}}, required: %w[product_id quantity]}}, payment_method: {type: "STRING", enum: %w[cash upi card other]}}, %w[items payment_method])
       end
-      rows << declaration("propose_invitation", "Prepare an employee invitation for confirmation; NEVER send it automatically", {email: {type: "STRING"}, role: {type: "STRING", enum: @membership.role == "owner" ? %w[staff manager admin] : %w[staff manager]}}, %w[email role]) if @policy.manage?
+      rows << declaration("propose_invitation", "Prepare an employee invitation for confirmation; NEVER send it automatically", {email: {type: "STRING"}, role: {type: "STRING", enum: @membership.role == "owner" ? %w[staff manager admin] : %w[staff manager]}}, %w[email role]) if @policy.manage? && EmailDelivery.configured?
       rows
     end
     def call(name, arguments)

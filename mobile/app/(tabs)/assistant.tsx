@@ -155,6 +155,12 @@ export default function Assistant() {
         title="Ask Stoqo"
         description="A little help. Right when you need it."
       />
+      {available && (
+        <Label muted>
+          Your questions and permitted store data are sent to Google Gemini
+          under its API data terms.
+        </Label>
+      )}
       {!available && (
         <Card>
           <Label>

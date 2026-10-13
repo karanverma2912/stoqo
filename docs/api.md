@@ -32,3 +32,26 @@ Example stock request:
 Returns movement plus updated product. Reuse the UUID on a transport retry. A new logical change needs a new UUID.
 
 List metadata: page, per_page (1–100), total, pages. There are no delete endpoints for ledger records. Archive a product with `status: archived` when necessary; history remains.
+
+## Native collaboration and account endpoints
+
+| Method | Path under `/api/v1` | Purpose |
+|---|---|---|
+| POST | auth/forgot_password | Uniform response; queues email when configured |
+| POST | auth/reset_password | One-use token + new password/confirmation; revokes sessions |
+| POST | auth/verify_email | Redeem verification token |
+| POST | auth/request_verification | Signed-in verification request |
+| DELETE | auth/account | Password + typed DELETE + owned-store closure confirmation |
+| POST / DELETE | devices / devices/:id | Register Expo token for this user/session/installation; remove own device |
+| POST | realtime/tickets | Issue 60-second one-use socket ticket |
+| GET | assistant/capabilities | Availability, help and tools allowed for current role |
+| POST | assistant/messages | Store-scoped chat; returns reply and proposals |
+| POST | assistant/actions/:id/confirm | Confirm this user's pending task; recheck role/plan/expiry |
+| DELETE | assistant/actions/:id | Cancel this user's pending task |
+| POST / DELETE | team_invitations / team_invitations/:id | Invite/revoke; queues email when configured |
+| POST | team_invitations/accept | Redeem token using invited-email account; no second admin approval |
+| GET | products/:id/image | Authenticated image bytes |
+
+Native sockets connect to `/cable?ticket=...` and subscribe to `WorkspaceChannel` with `business_id` and to `UserChannel`. Payloads invalidate cached data instead of embedding private stock or financial fields. `/notifications` serializes only the current user's read receipt and returns `meta.unread`. Reading on one device broadcasts a read update to that user's other devices.
+
+Native product creation also sends a top-level `idempotency_key`; retries return the same product and opening stock. Product-family, checkout and return requests likewise freeze their payload and request key until a confirmed result is received.

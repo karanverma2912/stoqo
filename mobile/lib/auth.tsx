@@ -44,6 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const me = await api<User>("auth/me");
     setUser(me.data);
     const stores = (await api<Business[]>("businesses")).data;
+    // Membership refreshes must not retain data fetched with an earlier role.
+    cache.clear();
     setBusinesses(stores);
     const saved = await SecureStore.getItemAsync("stoqo.selected-store");
     setBusiness(

@@ -7,7 +7,7 @@ import {
 } from "expo-speech-recognition";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, post } from "../../lib/api";
+import { api, post, money } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { usePreferences } from "../../lib/preferences";
 import {
@@ -40,6 +40,13 @@ export default function Assistant() {
     [confirmed, setConfirmed] = useState<Record<number, string>>({}),
     [actionBusy, setActionBusy] = useState<number | null>(null);
   const scroll = useRef<ScrollView>(null);
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
   const capabilities = useQuery({
     queryKey: ["store", business?.id, "assistant-capabilities"],
     queryFn: () =>
@@ -134,7 +141,8 @@ export default function Assistant() {
         [action.id]: result.data.message,
       }));
       await cache.invalidateQueries({ queryKey: ["store", business?.id] });
-      if (result.data.sale_id) router.push(`/sales/${result.data.sale_id}`);
+      if (mounted.current && result.data.sale_id)
+        router.push(`/sales/${result.data.sale_id}`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -205,12 +213,40 @@ export default function Assistant() {
             )}
             {m.actions?.map((action) => (
               <Card key={action.id} style={{ backgroundColor: colors.soft }}>
-                <Label>{action.kind.replaceAll("_", " ")}</Label>
-                {Object.entries(action.payload).map(([k, v]) => (
-                  <Label
-                    key={k}
-                  >{`${k.replaceAll("_", " ")}: ${Array.isArray(v) ? v.map((i) => `${(i as Record<string, unknown>).product_name} × ${(i as Record<string, unknown>).quantity}`).join(", ") : String(v)}`}</Label>
-                ))}
+                <Label>
+                  {action.kind === "stock_change"
+                    ? "Change stock"
+                    : action.kind === "create_sale"
+                      ? "Create bill"
+                      : "Invite teammate"}
+                </Label>
+                {action.kind === "stock_change" && (
+                  <>
+                    <Label>{String(action.payload.product_name)}</Label>
+                    <Label>{`${String(action.payload.quantity)} · ${String(action.payload.movement_type).replaceAll("_", " ")}`}</Label>
+                    <Label
+                      muted
+                    >{`Stock now: ${action.payload.current_stock}`}</Label>
+                  </>
+                )}
+                {action.kind === "invite_employee" && (
+                  <>
+                    <Label>{String(action.payload.email)}</Label>
+                    <Label>{`Access: ${action.payload.role}`}</Label>
+                  </>
+                )}
+                {action.kind === "create_sale" && (
+                  <>
+                    {(action.payload.items as Record<string, unknown>[]).map(
+                      (item, i) => (
+                        <Label
+                          key={i}
+                        >{`${item.product_name} × ${item.quantity} · ${money(String(item.unit_price), String(action.payload.currency))} each`}</Label>
+                      ),
+                    )}
+                    <Label>{`${money(String(action.payload.total), String(action.payload.currency))} · ${String(action.payload.payment_method).toUpperCase()}`}</Label>
+                  </>
+                )}
                 {confirmed[action.id] ? (
                   <Label>{confirmed[action.id]}</Label>
                 ) : (

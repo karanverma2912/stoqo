@@ -1,6 +1,6 @@
 require "net/smtp"
 class InvitationEmailJob < ApplicationJob
-  retry_on Net::SMTPError, IOError, Timeout::Error, wait: :polynomially_longer, attempts: 5
+  retry_on Net::SMTPError, MailProviders::DeliveryError, IOError, Timeout::Error, wait: :polynomially_longer, attempts: 5
   discard_on ActiveRecord::RecordNotFound
   def perform(id, encrypted_token)
     invitation = TeamInvitation.find(id)
@@ -9,7 +9,7 @@ class InvitationEmailJob < ApplicationJob
     return unless token && ActiveSupport::SecurityUtils.secure_compare(Digest::SHA256.hexdigest(token), invitation.token_digest)
     TeamMailer.invitation(invitation, token).deliver_now
     invitation.update!(email_status: "sent", email_sent_at: Time.current)
-  rescue Net::SMTPError, IOError, Timeout::Error
+  rescue Net::SMTPError, MailProviders::DeliveryError, IOError, Timeout::Error
     invitation&.update!(email_status: "retrying")
     raise
   end

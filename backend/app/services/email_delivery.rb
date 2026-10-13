@@ -1,6 +1,6 @@
 class EmailDelivery
   def self.configured?
-    ENV["MAIL_DELIVERY_ENABLED"] == "true" && ENV["SMTP_ADDRESS"].present? && ENV["MAIL_FROM"].present?
+    ENV["MAIL_DELIVERY_ENABLED"] == "true" && ENV["MAIL_FROM"].present? && (ENV["RESEND_API_KEY"].present? || ENV["SMTP_ADDRESS"].present?)
   end
 
   def self.encrypt(raw)

@@ -1,5 +1,7 @@
+require Rails.root.join("lib/mail_providers/resend_delivery")
+ActionMailer::Base.add_delivery_method :resend, MailProviders::ResendDelivery
 Rails.application.configure do
-  config.action_mailer.delivery_method = Rails.env.production? ? :smtp : :test
+  config.action_mailer.delivery_method = Rails.env.production? ? (ENV["RESEND_API_KEY"].present? ? :resend : :smtp) : :test
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.smtp_settings = {
     address: ENV.fetch("SMTP_ADDRESS", "localhost"),

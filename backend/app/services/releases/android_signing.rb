@@ -6,7 +6,7 @@ module Releases
       ActiveSupport::MessageEncryptor.new(key, cipher: "aes-256-gcm")
     end
     def self.credentials
-      row = ReleaseCredential.create_or_find_by!(name: "android-release-v1") do |record|
+      row = ReleaseCredential.find_by(name: "android-release-v1") || ReleaseCredential.create_or_find_by!(name: "android-release-v1") do |record|
         rsa = OpenSSL::PKey::RSA.new(3072)
         cert = OpenSSL::X509::Certificate.new
         cert.version = 2

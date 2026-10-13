@@ -8,7 +8,7 @@ Native sign-in/signup, account recovery and removal, store switching, inventory,
 
 Checkout, product creation, stock changes, returns and variant creation use persisted request keys. An interrupted response freezes the original request for retry. These are online writes; offline stock synchronization is not implemented.
 
-Invitation links expire in seven days and match the invited email. After sign-in and acceptance, the user joins immediately without another administrator approval. When SMTP is configured, encrypted token jobs deliver the invitation email. Until then, the owner can share the generated link. Signup verification/password reset email also need SMTP. `REQUIRE_EMAIL_VERIFICATION=true` should be enabled after mail delivery is verified.
+Invitation links expire in seven days and match the invited email. After sign-in and acceptance, the user joins immediately without another administrator approval. When email delivery is configured, encrypted token jobs deliver the invitation email. Until then, the owner can share the generated link. Signup verification/password reset email also need an email provider. `REQUIRE_EMAIL_VERIFICATION=true` should be enabled after mail delivery is verified. The HTTPS Resend adapter supports free Render deployments where standard SMTP ports are blocked.
 
 Foreground realtime uses short-lived one-use WebSocket tickets and database-backed Action Cable. Each device receives store invalidations. Read/unread state is personal and synchronizes across that user's devices. Background push uses device/session-scoped Expo registrations with delivery/receipt tracking; Firebase/Expo credentials (and Apple push credentials for iOS) are still required. Logging out disables that session's push registration.
 

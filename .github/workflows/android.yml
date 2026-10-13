@@ -8,7 +8,26 @@ concurrency:
   group: stoqo-android-release
   cancel-in-progress: false
 jobs:
+  configuration:
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    outputs:
+      ready: ${{ steps.origins.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: origins
+        name: Check production origins
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const config = require('./mobile/production.json');
+          const ready = Boolean(config.api_url && config.web_url);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `ready=${ready}\n`);
+          if (!ready) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, 'Production APK release is waiting for the live API and website origins. No production APK was built.\n');
+          JS
   release:
+    needs: configuration
+    if: needs.configuration.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:

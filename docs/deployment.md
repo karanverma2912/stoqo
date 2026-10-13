@@ -21,7 +21,7 @@ Next.js builds with Node 24, `cd frontend && npm ci && npm run build`, and start
 
 ## Free-tier limits and recovery
 
-Render free web services sleep after inactivity and share a monthly running-hour allowance. Supabase free projects have database/storage/egress limits and may pause when inactive. Two sleeping web services can cause a delayed first request. No uptime guarantee, unlimited traffic, automatic paid upgrades or keep-alive workaround is configured. Provider plans must be reviewed before serving real businesses at scale.
+Render free web services sleep after inactivity and share a monthly running-hour allowance. Supabase free projects have database/storage/egress limits and may pause when inactive. Two sleeping web services can cause a delayed first request. Render can charge bandwidth/build overages when a payment method is present even on free services. Set the workspace spending limits to zero and verify the billing settings before deployment. No keep-alive workaround is configured. Provider plans must be reviewed before serving real businesses at scale.
 
 Supabase's free plan requires an operator-managed backup strategy. Export the private application schema and data regularly and preserve the Rails secret/signing key. Because files live in PostgreSQL, a complete database backup includes stored file contents. Exercise restoration in a separate database; never overwrite live inventory to test a restore. Record a recovery result before a public rollout.
 

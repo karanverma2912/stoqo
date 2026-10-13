@@ -1,0 +1,2 @@
+class ReleaseAccess < ApplicationRecord
+end

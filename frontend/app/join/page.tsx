@@ -66,6 +66,7 @@ export default function Join() {
             {tr(error)}
           </p>
         )}
+        {token && <button className="button subtle full" onClick={() => {location.href = `stoqo://join#token=${encodeURIComponent(token)}`;}}>Open Stoqo app</button>}
         {auth && (
           <p>
             <Link href="/login">{tr("Sign in")}</Link> {tr("or")}

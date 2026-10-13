@@ -6,7 +6,8 @@ Rails.application.configure do
   config.assume_ssl = true
   config.log_level = :info
   config.logger = ActiveSupport::Logger.new(STDOUT)
-  config.active_storage.service = :s3
+  config.active_storage.service = ENV.fetch("STORAGE_SERVICE", "database").to_sym
+  config.action_cable.allowed_request_origins = ENV.fetch("FRONTEND_ORIGINS", "").split(",")
   config.hosts = ENV.fetch("ALLOWED_HOSTS", "localhost").split(",") + [ENV["RENDER_EXTERNAL_HOSTNAME"], ENV["RENDER_INTERNAL_HOSTNAME"]].compact
   config.host_authorization = {exclude: ->(request) { request.path == "/up" }}
   config.ssl_options = {redirect: {exclude: ->(request) { request.path == "/up" }}}

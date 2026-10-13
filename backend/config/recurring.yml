@@ -1,0 +1,4 @@
+production:
+  cleanup:
+    class: MaintenanceJob
+    schedule: every hour

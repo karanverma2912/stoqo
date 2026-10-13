@@ -2,7 +2,7 @@
 
 **Your stock. In a good place.** A mobile-first inventory SaaS for small businesses.
 
-This repository implements the first MVP with a Rails API and Next.js frontend. See the verification notes below before deploying with customer data.
+Stoqo includes an Expo React Native Android/iOS app, a Rails API and a Next.js website. See [native launch status](docs/native-launch.md) for implemented workflows and remaining provider/store-release requirements.
 
 ## Included
 
@@ -19,7 +19,9 @@ This repository implements the first MVP with a Rails API and Next.js frontend. 
 ## Structure
 
 ```text
-backend/       Rails 8.1 API, PostgreSQL, Sidekiq
+backend/       Rails 8.1 API, PostgreSQL, Solid Queue and Solid Cable
+mobile/        Expo 57 / React Native / TypeScript
+legacy/        Previous Android WebView implementation
 frontend/      Next.js 16 / React 19 / TypeScript
 docs/         Architecture, API, deployment and verification
 .github/       Independent backend/frontend CI jobs
@@ -49,7 +51,7 @@ bundle install
 bundle exec rails db:prepare db:seed
 bundle exec puma -C config/puma.rb
 # Separate terminal with the same exported environment:
-bundle exec sidekiq
+bundle exec ruby bin/jobs
 ```
 
 ## Checks
@@ -67,8 +69,6 @@ Tests need a PostgreSQL test database. CI supplies one. Test credentials default
 
 ## Deploy
 
-Use `frontend/` as the Vercel root and set server-only `API_URL` to the Rails HTTPS origin. Run Rails and Sidekiq as separate services sharing PostgreSQL, Redis and object storage. See [deployment instructions](docs/deployment.md), [architecture](docs/architecture.md) and [API contract](docs/api.md).
+The free pilot uses Render for Rails/Next.js and the existing Supabase PostgreSQL project with a private schema. Jobs, realtime delivery and limited uploads share PostgreSQL; Redis and paid object storage are optional. Free Render instances sleep and share monthly running-hour limits. This setup does not promise unlimited traffic or always-on production availability.
 
-Payments, email/password recovery and full offline synchronization are deferred. Team invitation links, product groups with size/colour variants, barcode label printing and multi-item checkout are implemented; see docs/launch-and-team.md, docs/product-setup.md and docs/checkout.md. Prices are stored as proposed plans, not an active checkout offering. No production services are provisioned by this repository.
-
-See [verification record](docs/verification.md) for executed checks and outstanding gates.
+See [deployment instructions](docs/deployment.md), [native app and launch requirements](docs/native-launch.md) and [API contract](docs/api.md). Native source is in `mobile/`; Android releases are built by `.github/workflows/android.yml`. Payments, offline stock synchronization and Bluetooth printer integration remain separate work. Email, Gemini and background push require provider credentials.

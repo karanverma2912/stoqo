@@ -4,6 +4,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 COPY Gemfile* ./
 RUN bundle install
 COPY . .
-RUN chmod +x bin/rails
+RUN chmod +x bin/rails bin/jobs bin/start-production
 EXPOSE 3001
-CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
+CMD ["bin/start-production"]

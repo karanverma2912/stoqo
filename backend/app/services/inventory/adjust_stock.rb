@@ -15,7 +15,7 @@ module Inventory
       product.with_lock do
         existing = product.business.stock_movements.find_by(idempotency_key: idempotency_key)
         if existing
-          raise InvalidMovement, "Request key was already used for a different change" unless existing.product_id == product.id && existing.quantity == amount && existing.movement_type == movement_type
+          raise InvalidMovement, "Request key was already used for a different change" unless existing.user_id == user.id && existing.product_id == product.id && existing.quantity == amount && existing.movement_type == movement_type && existing.note.to_s == note.to_s
           return existing
         end
         raise InvalidMovement, "Not enough stock available" if product.current_stock + amount < 0

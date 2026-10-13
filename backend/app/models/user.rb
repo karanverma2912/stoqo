@@ -3,6 +3,8 @@ class User < ApplicationRecord
   has_many :business_memberships
   has_many :businesses, through: :business_memberships
   has_many :sessions, dependent: :destroy
+  has_many :account_tokens, dependent: :delete_all
+  has_many :device_registrations, dependent: :destroy
   normalizes :email, with: ->(email) { email.strip.downcase }
   validates :name, presence: true, length: {maximum: 100}
   validates :email, presence: true, uniqueness: {case_sensitive: false}, format: {with: URI::MailTo::EMAIL_REGEXP}

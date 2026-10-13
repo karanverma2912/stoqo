@@ -1,0 +1,2 @@
+class ReleaseCredential < ApplicationRecord
+end

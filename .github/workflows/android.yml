@@ -1,29 +1,58 @@
-name: Android APK
+name: Android release
 on:
   workflow_dispatch:
   push:
-    paths: ['mobile/**', '.github/workflows/android.yml']
+    branches: [main]
+    paths: ['mobile/**', 'scripts/android-*', '.github/workflows/android.yml']
+concurrency:
+  group: stoqo-android-release
+  cancel-in-progress: false
 jobs:
-  apk:
+  release:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
-      contents: read
+      contents: write
+      id-token: write
+      checks: read
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '24', cache: npm, cache-dependency-path: mobile/package-lock.json}
       - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+        with: {distribution: temurin, java-version: '21'}
       - uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools platforms;android-36 build-tools;35.0.0
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.13'
-      - run: gradle --no-daemon :app:assembleDebug :app:lintDebug
+      - run: npm ci && npm run typecheck && npm test
+        working-directory: mobile
+      - name: Configure the release
+        run: node scripts/android-config.cjs
+        env:
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+          EXPO_PUBLIC_EAS_PROJECT_ID: ${{ vars.STOQO_EAS_PROJECT_ID }}
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.STOQO_GOOGLE_SERVICES_JSON_BASE64 }}
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --no-install
+        working-directory: mobile
+      - name: Retrieve signing credentials using GitHub identity
+        run: node scripts/android-signing.cjs
+      - name: Build signed APK and Play Store bundle
+        run: ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease
         working-directory: mobile/android
+      - name: Verify release signature
+        run: node scripts/android-verify.cjs
       - uses: actions/upload-artifact@v4
         with:
-          name: stoqo-android-test-apk
-          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          name: stoqo-android-release
+          path: |
+            mobile/android/app/build/outputs/apk/release/app-release.apk
+            mobile/android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
+      - name: Wait for quality checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/android-quality.cjs
+      - name: Publish the installable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "android-0.3.0-${GITHUB_RUN_NUMBER}" mobile/android/app/build/outputs/apk/release/app-release.apk mobile/android/app/build/outputs/bundle/release/app-release.aab --title "Stoqo Android 0.3.0 build ${GITHUB_RUN_NUMBER}" --notes-file docs/android-release-notes.md

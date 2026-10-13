@@ -25,6 +25,12 @@ class Api::V1::AccountSecurityController < ApplicationController
     data({message: "Other sessions have been signed out."})
   end
 
+  def destroy
+    raise ArgumentError, "Type DELETE to confirm account deletion" unless params[:confirmation] == "DELETE"
+    Accounts::DeleteAccount.call(user: current_user, password: params.require(:current_password), close_owned_stores: params[:close_owned_stores] == true)
+    head :no_content
+  end
+
   private
 
   def verify_password!

@@ -1,11 +1,11 @@
-# Paid, durable deployment. Review Render's displayed price before applying.
+# Free pilot deployment. Free services sleep and share the workspace's monthly hours.
+# Database is the existing Supabase project; no paid Render database/worker/Redis.
 services:
   - type: web
     name: stoqo-web
-    autoDeployTrigger: checksPass
     runtime: node
     rootDir: frontend
-    plan: 0.5c-512mb
+    plan: free
     region: singapore
     buildCommand: npm ci && npm run build
     startCommand: npm start -- --hostname 0.0.0.0 --port $PORT
@@ -14,20 +14,15 @@ services:
       - key: NODE_VERSION
         value: "24"
       - key: API_HOST
-        fromService:
-          type: web
-          name: stoqo-api
-          property: host
+        fromService: {type: web, name: stoqo-api, property: host}
       - key: API_PORT
         value: "10000"
   - type: web
     name: stoqo-api
-    autoDeployTrigger: checksPass
     runtime: docker
     rootDir: backend
-    plan: 0.5c-512mb
+    plan: free
     region: singapore
-    preDeployCommand: bundle exec rails db:prepare db:seed
     healthCheckPath: /up
     envVars:
       - key: PORT
@@ -35,94 +30,32 @@ services:
       - key: RAILS_ENV
         value: production
       - key: SECRET_KEY_BASE
-        generateValue: true
+        sync: false
       - key: DATABASE_URL
-        fromDatabase:
-          name: stoqo-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: stoqo-queue
-          property: connectionString
-      - key: ALLOWED_HOSTS
-        value: localhost
+        sync: false
+      - key: DATABASE_SCHEMA
+        value: stoqo
+      - key: DATABASE_POOL
+        value: "12"
+      - key: RAILS_MAX_THREADS
+        value: "3"
+      - key: JOB_ADAPTER
+        value: solid_queue
+      - key: SOLID_QUEUE_IN_PUMA
+        value: "true"
+      - key: SOLID_QUEUE_SUPERVISOR_MODE
+        value: async
+      - key: STORAGE_SERVICE
+        value: database
+      - key: WEB_URL
+        sync: false
       - key: FRONTEND_ORIGINS
-        value: ""
-      - key: S3_ACCESS_KEY_ID
         sync: false
-      - key: S3_SECRET_ACCESS_KEY
-        sync: false
-      - key: S3_REGION
-        value: auto
-      - key: S3_BUCKET
-        sync: false
-      - key: S3_ENDPOINT
-        sync: false
-  - type: worker
-    name: stoqo-worker
-    autoDeployTrigger: checksPass
-    runtime: docker
-    rootDir: backend
-    dockerCommand: bundle exec sidekiq -C config/sidekiq.yml
-    plan: 0.5c-512mb
-    region: singapore
-    envVars:
-      - key: RAILS_ENV
-        value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: stoqo-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: stoqo-queue
-          property: connectionString
-      - key: SECRET_KEY_BASE
-        fromService:
-          type: web
-          name: stoqo-api
-          envVarKey: SECRET_KEY_BASE
-      - key: ALLOWED_HOSTS
-        value: localhost
-      - key: S3_ACCESS_KEY_ID
-        fromService:
-          type: web
-          name: stoqo-api
-          envVarKey: S3_ACCESS_KEY_ID
-      - key: S3_SECRET_ACCESS_KEY
-        fromService:
-          type: web
-          name: stoqo-api
-          envVarKey: S3_SECRET_ACCESS_KEY
-      - key: S3_REGION
-        fromService:
-          type: web
-          name: stoqo-api
-          envVarKey: S3_REGION
-      - key: S3_BUCKET
-        fromService:
-          type: web
-          name: stoqo-api
-          envVarKey: S3_BUCKET
-      - key: S3_ENDPOINT
-        fromService:
-          type: web
-          name: stoqo-api
-          envVarKey: S3_ENDPOINT
-  - type: keyvalue
-    name: stoqo-queue
-    plan: 256mb
-    region: singapore
-    ipAllowList: []
-    maxmemoryPolicy: noeviction
-databases:
-  - name: stoqo-db
-    plan: 0.1c-256mb
-    diskSizeGB: 1
-    postgresMajorVersion: "17"
-    region: singapore
-    databaseName: stoqo
-    user: stoqo
-    ipAllowList: []
+      - key: RELEASE_SIGNING_ENABLED
+        value: "true"
+      - key: STOQO_FREE_PILOT
+        value: "true"
+      - key: AI_ENABLED
+        value: "false"
+      - key: MAIL_DELIVERY_ENABLED
+        value: "false"

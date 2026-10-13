@@ -1,4 +1,5 @@
 class Sale < ApplicationRecord
+  include WorkspaceUpdates
   before_validation { self.customer_phone_normalized = customer_phone.to_s.gsub(/[^0-9]/, "").presence }
   belongs_to :business
   belongs_to :user

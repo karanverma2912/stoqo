@@ -6,3 +6,8 @@
     plan.default_plan = name == "Starter"
   end
 end
+
+if ENV["STOQO_FREE_PILOT"] == "true"
+  SubscriptionPlan.where(default_plan: true).update_all(default_plan: false)
+  SubscriptionPlan.find_or_create_by!(name: "Free pilot").update!(monthly_price_paise: 0, member_limit: 10, trial_days: 90, default_plan: true, available: true)
+end

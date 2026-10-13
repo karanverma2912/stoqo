@@ -14,6 +14,8 @@ class Business < ApplicationRecord
   has_many :team_invitations
   has_many :subscription_requests
   has_many :imports
+  has_many :assistant_actions
+  has_many :assistant_conversations
   validates :name, presence: true, length: {maximum: 120}
   validates :currency, format: {with: /\A[A-Z]{3}\z/}
   validates :timezone, inclusion: {in: ActiveSupport::TimeZone.all.map(&:tzinfo).map(&:name)}

@@ -1,0 +1,1 @@
+export async function GET(){const team=process.env.APPLE_TEAM_ID;return Response.json({applinks:{apps:[],details:team?[{appID:`${team}.com.stoqo.app`,paths:["/join","/verify","/reset-password"]}]:[]}});}

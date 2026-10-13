@@ -1,0 +1,2 @@
+class StoredFile < ApplicationRecord
+end

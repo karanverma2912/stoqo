@@ -18,6 +18,9 @@ const allowed = new Set([
   "team_members",
   "team_invitations",
   "subscriptions",
+  "assistant",
+  "realtime",
+  "devices",
 ]);
 async function proxy(
   req: NextRequest,

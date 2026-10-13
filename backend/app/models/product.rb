@@ -1,4 +1,5 @@
 class Product < ApplicationRecord
+  include WorkspaceUpdates
   belongs_to :supplier, optional: true
   belongs_to :business
   belongs_to :product_group, optional: true

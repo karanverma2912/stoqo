@@ -8,7 +8,7 @@ class Api::V1::TeamMembersController < ApplicationController
       {id: member.id, role: member.role, user: user_json(member.user), can_edit: allowed, can_remove: allowed}
     },
       invitations: current_business.team_invitations.pending.order(:id).map { |invitation|
-        invitation.as_json(only: [:id, :email, :role, :expires_at]).merge(can_revoke: actor.role == "owner" || invitation.role != "admin")
+        invitation.as_json(only: [:id, :email, :role, :expires_at, :email_status, :email_sent_at]).merge(can_revoke: actor.role == "owner" || invitation.role != "admin")
       },
       role_options: actor.role == "owner" ? %w[staff manager admin] : %w[staff manager],
       member_limit: current_business.subscription_plan.member_limit})

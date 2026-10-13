@@ -32,7 +32,7 @@ services:
   worker:
     build: ./backend
     environment: *backend_env
-    command: bundle exec sidekiq
+    command: bundle exec ruby bin/jobs
     volumes: ["storage_data:/app/storage"]
     depends_on: [api, redis]
 volumes:

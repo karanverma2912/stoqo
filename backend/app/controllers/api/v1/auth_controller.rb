@@ -2,7 +2,11 @@ class Api::V1::AuthController < ApplicationController
   skip_before_action :authenticate!, only: [:signup, :login]
   def signup
     user = User.create!(params.require(:user).permit(:name, :email, :password, :password_confirmation))
-    data({user: user_json(user), token: Session.issue!(user)}, status: :created)
+    if EmailDelivery.configured?
+      raw = AccountToken.issue!(user, "email_verification")
+      AccountEmailJob.perform_later(user.id, "email_verification", EmailDelivery.encrypt(raw))
+    end
+    data({user: user_json(user), token: Session.issue!(user), email_delivery_available: EmailDelivery.configured?}, status: :created)
   end
   def login
     user = User.find_by(email: params[:email].to_s.strip.downcase)

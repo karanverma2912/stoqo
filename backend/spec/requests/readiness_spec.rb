@@ -10,7 +10,7 @@ RSpec.describe "Readiness", type: :request do
   end
 
   it "returns a generic unavailable response without leaking connection details" do
-    allow(Sidekiq).to receive(:redis).and_raise(StandardError, "redis://private:secret@queue")
+    allow(ActiveRecord::Base.connection_pool).to receive(:with_connection).and_raise(StandardError, "postgres://private:secret@database")
     get "/ready"
     expect(response).to have_http_status(:service_unavailable)
     expect(response.parsed_body).to eq("status" => "unavailable")

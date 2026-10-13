@@ -1,4 +1,5 @@
 class Supplier < ApplicationRecord
+  include WorkspaceUpdates
   belongs_to :business
   has_many :products
   before_validation { self.name = name.to_s.strip }

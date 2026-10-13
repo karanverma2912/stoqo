@@ -2,21 +2,8 @@ class Api::V1::TeamInvitationsController < ApplicationController
   before_action :require_write!, only: :create
   def create
     authorize current_business, :manage?, policy_class: BusinessPolicy
-    token = SecureRandom.urlsafe_base64(32)
-    invitation = nil
-    current_business.with_lock do
-      actor = management_actor!
-      attributes = params.require(:invitation).permit(:email, :role)
-      raise Pundit::NotAuthorizedError if attributes[:role] == "admin" && actor.role != "owner"
-      email = attributes[:email].to_s.strip.downcase
-      raise ArgumentError, "This email is already on your team" if current_business.business_memberships.joins(:user).exists?(users: {email: email})
-      raise ArgumentError, "An invitation is already pending for this email" if current_business.team_invitations.pending.exists?(email: email)
-      seats = current_business.business_memberships.count + current_business.team_invitations.pending.count
-      raise ArgumentError, "Your plan's user limit has been reached" if seats >= current_business.subscription_plan.member_limit
-      invitation = current_business.team_invitations.create!(attributes.merge(token_digest: Digest::SHA256.hexdigest(token), expires_at: 7.days.from_now))
-      current_business.activities.create!(user: current_user, action: "employee_invited", subject_name: invitation.email)
-    end
-    data({id: invitation.id, token: token, email: invitation.email, expires_at: invitation.expires_at}, status: :created)
+    result = Team::Invite.call(business: current_business, user: current_user, attributes: params.require(:invitation).permit(:email, :role))
+    data(result, status: :created)
   end
   def destroy
     authorize current_business, :manage?, policy_class: BusinessPolicy
@@ -40,6 +27,8 @@ class Api::V1::TeamInvitationsController < ApplicationController
       raise ArgumentError, "Your plan's user limit has been reached" if business.business_memberships.count >= business.subscription_plan.member_limit
       business.business_memberships.create!(user: current_user, role: invitation.role)
       invitation.update!(accepted_at: Time.current)
+      current_user.update!(email_verified_at: Time.current) unless current_user.email_verified_at
+      business.notifications.create!(kind: "employee_joined", message: "#{current_user.name} joined your team")
       business.activities.create!(user: current_user, action: "employee_joined", subject_name: current_user.name)
     end
     data({business_id: business.id})

@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  mount ActionCable.server => "/cable"
   get "up", to: "rails/health#show"
   get "ready", to: "readiness#show"
   namespace :api do
@@ -9,7 +10,20 @@ Rails.application.routes.draw do
       get "auth/security", to: "account_security#show"
       post "auth/change_password", to: "account_security#change_password"
       post "auth/revoke_other_sessions", to: "account_security#revoke_other_sessions"
+      delete "auth/account", to: "account_security#destroy"
       delete "auth/logout", to: "auth#logout"
+      post "auth/forgot_password", to: "account_recovery#forgot_password"
+      post "auth/reset_password", to: "account_recovery#reset_password"
+      post "auth/verify_email", to: "account_recovery#verify_email"
+      post "auth/request_verification", to: "account_recovery#request_verification"
+      post "realtime/tickets", to: "realtime#ticket"
+      post "releases/android_credentials", to: "release_credentials#create"
+      get "releases/android_metadata", to: "release_credentials#metadata"
+      resources :devices, only: [:create, :destroy]
+      get "assistant/capabilities", to: "assistant#capabilities"
+      post "assistant/messages", to: "assistant#messages"
+      post "assistant/actions/:id/confirm", to: "assistant#confirm"
+      delete "assistant/actions/:id", to: "assistant#cancel"
       resources :businesses, only: [:index, :create, :update]
       resources :suppliers, only: [:index, :create, :update]
       resources :categories, only: [:index, :create]

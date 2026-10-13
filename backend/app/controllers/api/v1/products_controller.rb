@@ -30,7 +30,7 @@ class Api::V1::ProductsController < ApplicationController
     send_data product.image.download, type: product.image.content_type, disposition: "inline"
   end
   def create
-    product = Inventory::CreateProduct.call(business: current_business, user: current_user, attributes: product_params, initial_quantity: params.fetch(:initial_quantity, 0))
+    product = Inventory::CreateProduct.call(business: current_business, user: current_user, attributes: product_params, initial_quantity: params.fetch(:initial_quantity, 0), idempotency_key: params[:idempotency_key])
     data(product_json(product), status: :created)
   end
   def update

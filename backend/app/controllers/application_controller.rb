@@ -68,9 +68,15 @@ class ApplicationController < ActionController::API
     total = scope.count
     [scope.limit(per).offset((page - 1) * per), {page: page, per_page: per, total: total, pages: (total.to_f / per).ceil}]
   end
-  def user_json(user) = user.as_json(only: [:id, :name, :email])
+  def require_verified_email!
+    raise ArgumentError, "Verify your email before setting up a store" if ENV["REQUIRE_EMAIL_VERIFICATION"] == "true" && current_user.email_verified_at.nil?
+  end
+  def user_json(user)
+    user.as_json(only: [:id, :name, :email, :email_verified_at]).merge(email_verification_required: ENV["REQUIRE_EMAIL_VERIFICATION"] == "true")
+  end
   def product_json(product)
     product.as_json.except("business_id").merge("display_name" => product.display_name, "stock_status" => product.stock_status, "category_name" => product.category&.name, "supplier_name" => product.supplier&.name,
+      "image_path" => product.image.attached? ? "/api/v1/products/#{product.id}/image" : nil,
       "image_url" => product.image.attached? ? "/api/backend/products/#{product.id}/image?business_id=#{product.business_id}" : nil)
   end
   def movement_json(movement)

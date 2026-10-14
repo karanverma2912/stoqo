@@ -1,4 +1,4 @@
-# Production handoff — 13 October 2026
+# Production handoff — 14 October 2026
 
 ## Ready in source
 
@@ -7,15 +7,18 @@
 - Invitation delivery through HTTPS Resend or SMTP, one-use invited-email acceptance without another administrator approval, recovery and verification email.
 - One-use WebSocket tickets, private notification receipts, device/session-scoped Expo background push and receipt handling.
 - Retry-safe, persisted mobile write requests and PostgreSQL-backed durable jobs/uploads.
+- Foreground notification connections ignore retired tickets and socket callbacks, deduplicate resume events, recover stalled handshakes, and recheck rejected subscriptions. Pending writes own their navigation scope so an earlier operation cannot replace or clear another operation's saved request.
 - Free Render API/website configuration, permanent encrypted Android signing service and protected GitHub OIDC release workflow.
 
 ## Verification
+
+14 October follow-up: native typecheck, lint and 25 tests passed locally, including 18 new reconnect and persisted-write regression tests. Website typecheck and all 18 tests also passed. Backend code is unchanged in this follow-up. No new Android binary was built or published, and no GitHub build was awaited, as requested.
 
 The quality-gate run at commit `ba6b0802fe33c68caaf951f56471b3e6cb6e4169` passed Rails database migrations and 104 RSpec examples, frontend typecheck/tests/production build, browser workflows, native typecheck/tests/lint and Android JavaScript export. Native Android compilation is a separate gate; a test APK is not a production-signed launch artifact. Physical-device and live-provider testing remain required.
 
 ## Deployment state
 
-The existing Stoqo Supabase project has a private `stoqo` schema and a dedicated login role. No customer records were created. Render API creation was rejected by automatic approval review because generated database and Rails credentials would be transmitted to Render without explicit authorization. No Stoqo Render service or production frontend has been provisioned, and no paid resources were selected. Deployment credentials are preserved privately and never committed.
+Live account checks on 14 October confirm that the Stoqo Supabase project is healthy. Its private `stoqo` schema belongs to the dedicated `stoqo_app` login role, but it contains **zero application tables**: Rails migrations have not run there. No customer records were created. The connected Render workspace has **no Stoqo API or website service**. Render API creation was previously rejected by automatic approval review because generated database and Rails credentials would be transmitted to Render without explicit authorization. Deployment credentials are preserved privately and never committed. No paid resources were selected.
 
 The Android production release deliberately waits while `mobile/production.json` has no confirmed live API/web origins. After authorization: deploy the free API and website, verify the actual session-pooler connection and worker, set origins, build the permanently signed APK/AAB, test two clients against the live API and verify persistent uploads/imports.
 

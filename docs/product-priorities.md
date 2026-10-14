@@ -1,16 +1,20 @@
 # Stoqo improvement priorities
 
-Deployment, demo publishing and phone testing remain paused. Changes target the
-GitHub project and laptop-based feedback. This is a proposal, not a claim that
-all listed work is implemented.
+This proposal was written before the native-app work. As of 14 October, account
+recovery/verification, field-level cost permissions, hold/resume bills, supplier
+restocking, daily summaries and customer history have implementations in source.
+The native/server launch is active again; live deployment and provider verification
+still have the blockers listed in production-status.md. Push source work without
+waiting for GitHub builds. The remaining items below are improvements, not a claim
+that every item has been completed.
 
 ## Fix and finish current flows first
 
 1. Account recovery, email verification and real invitation delivery, with resend,
-   expiry and clear success/failure states. Password changes already exist; users
-   who have forgotten their password still need recovery.
+   expiry and clear success/failure states. Recovery and verification code exist;
+   real delivery needs a provider key and verified sender.
 2. Audit field-level permissions as well as endpoint access. Product serialization
-   currently includes purchase prices; decide which employee roles can see costs.
+   restricts purchase prices by role; keep checking those boundaries as features grow.
    Keep staff bill access limited to their own bills and preserve audit history.
 3. Refine interrupted checkout and imports: retain drafts, explain uncertain saves,
    show actionable row errors, and distinguish recorded payments from money collected.

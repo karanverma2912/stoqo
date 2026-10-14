@@ -4,7 +4,8 @@ import * as Crypto from "expo-crypto";
 import { api, ApiError, post } from "./api";
 import { useAuth } from "./auth";
 import type { Envelope } from "./types";
-type Saved = { version: 1; path: string; body: Record<string, any> };
+import { DurableWriteSession, type SavedWrite } from "./durable-write-session";
+
 // A pending request is frozen and belongs to one account, store and operation.
 export function useDurableWrite(operation: string) {
   const { user, business } = useAuth();
@@ -12,86 +13,69 @@ export function useDurableWrite(operation: string) {
     user && business
       ? `stoqo.write.${user.id}.${business.id}.${operation}`
       : null;
-  const [pending, setPending] = useState<Saved | null>(null);
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState("");
-  const current = useRef<Saved | null>(null),
-    live = useRef(true),
-    running = useRef(false);
+  const current = useRef<DurableWriteSession | null>(null);
+  const [state, setState] = useState<{
+    key: string | null;
+    pending: SavedWrite | null;
+    ready: boolean;
+    error: string;
+  }>({ key: null, pending: null, ready: false, error: "" });
+
   useEffect(() => {
-    live.current = true;
-    setReady(false);
-    setError("");
-    current.current = null;
-    setPending(null);
-    if (key)
-      void AsyncStorage.getItem(key)
-        .then((raw) => {
-          if (!live.current) return;
-          if (raw) {
-            const record = JSON.parse(raw) as Saved;
-            if (record.version !== 1 || !record.path || !record.body)
-              throw new Error("Saved request needs support assistance.");
-            current.current = record;
-            setPending(record);
-          }
-          setReady(true);
-        })
-        .catch(() => {
-          if (live.current)
-            setError(
-              "The saved request could not be restored. Please contact support before repeating this action.",
-            );
-        });
-    return () => {
-      live.current = false;
-    };
+    if (!key) {
+      current.current = null;
+      setState({ key: null, pending: null, ready: false, error: "" });
+      return;
+    }
+    const session = new DurableWriteSession(key, AsyncStorage, (value) => {
+      if (current.current !== value) return;
+      setState({
+        key,
+        pending: value.pending,
+        ready: value.ready,
+        error: value.error,
+      });
+    });
+    current.current = session;
+    setState({ key, pending: null, ready: false, error: "" });
+    void session.restore();
+    return () => session.deactivate();
   }, [key]);
+
   async function execute<T>(
     path: string,
     body: Record<string, any>,
     requestKeyRoot?: string,
     build?: (body: Record<string, any>) => RequestInit,
   ): Promise<Envelope<T>> {
-    if (!key || !business || !ready)
+    const session = current.current;
+    if (!key || !business || session?.key !== key)
       throw new Error("Wait for saved requests to load.");
-    if (running.current)
-      throw new Error("This request is already in progress.");
-    running.current = true;
-    try {
-      let record = current.current;
-      if (!record) {
+    return session.execute(
+      () => {
         const idempotency_key = Crypto.randomUUID();
         const frozen = JSON.parse(JSON.stringify(body));
         if (requestKeyRoot)
           frozen[requestKeyRoot].idempotency_key = idempotency_key;
         else frozen.idempotency_key = idempotency_key;
-        record = { version: 1, path, body: frozen };
-        await AsyncStorage.setItem(key, JSON.stringify(record));
-        current.current = record;
-        if (live.current) setPending(record);
-      }
-      const result = await api<T>(
-        record.path,
-        build ? build(record.body) : post(record.body),
-        business.id,
-      );
-      await AsyncStorage.removeItem(key);
-      current.current = null;
-      if (!live.current)
-        throw new Error("The store changed while this request completed.");
-      setPending(null);
-      return result;
-    } catch (error) {
-      if (error instanceof ApiError && [400, 404, 422].includes(error.status)) {
-        await AsyncStorage.removeItem(key);
-        current.current = null;
-        if (live.current) setPending(null);
-      }
-      throw error;
-    } finally {
-      running.current = false;
-    }
+        return { version: 1, path, body: frozen };
+      },
+      (record) =>
+        api<T>(
+          record.path,
+          build ? build(record.body) : post(record.body),
+          business.id,
+        ),
+      (error) =>
+        error instanceof ApiError && [400, 404, 422].includes(error.status),
+    );
   }
-  return { pending, ready, error, execute };
+
+  const visible = state.key === key && current.current?.active;
+  return {
+    pending: visible ? state.pending : null,
+    ready: visible ? state.ready : false,
+    error: visible ? state.error : "",
+    execute,
+  };
 }

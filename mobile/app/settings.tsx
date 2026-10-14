@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Linking } from "react-native";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, patch, post, saveSession } from "../lib/api";
+import { api, patch, post, saveSession, webOrigin } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { usePreferences } from "../lib/preferences";
 import { permissions } from "../lib/permissions";
@@ -43,7 +43,7 @@ export default function Settings() {
       setBusy(false);
     }
   }
-  const web = process.env.EXPO_PUBLIC_WEB_URL;
+  const web = webOrigin();
   return (
     <Screen title="Settings" back>
       <Heading title={user?.name ?? "Your account"} description={user?.email} />
@@ -83,7 +83,7 @@ export default function Settings() {
           busy={busy}
           onPress={() =>
             void run(async () => {
-              await registerPush();
+              if (!await registerPush()) return;
               setNotice("Background alerts enabled on this phone.");
             })
           }

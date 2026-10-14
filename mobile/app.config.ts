@@ -1,6 +1,7 @@
 import type { ExpoConfig } from "expo/config";
-const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
-const web = process.env.EXPO_PUBLIC_WEB_URL;
+import settings from "./production.json";
+import { resolveReleaseConfig } from "./config/release.cjs";
+const { apiUrl, webUrl: web, projectId, versionCode } = resolveReleaseConfig(settings);
 const webHost = web ? new URL(web).hostname : undefined;
 const config: ExpoConfig = {
   name: "Stoqo",
@@ -18,7 +19,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: "com.stoqo.app",
-    versionCode: Number(process.env.ANDROID_VERSION_CODE ?? 3),
+    versionCode,
     adaptiveIcon: {
       foregroundImage: "./assets/stoqo-adaptive.png",
       backgroundColor: "#D5F887",
@@ -78,7 +79,8 @@ const config: ExpoConfig = {
       },
     ],
   ],
-  extra: { ...(projectId ? { eas: { projectId } } : {}) },
+  // Only public connection information is embedded in native builds.
+  extra: { apiUrl, webUrl: web, ...(projectId ? { eas: { projectId } } : {}) },
   updates: { enabled: false },
   experiments: { typedRoutes: false },
   web: {

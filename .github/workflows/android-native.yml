@@ -1,8 +1,5 @@
 name: Android native compilation
 on:
-  push:
-    branches: ['feat/native-ai-notifications']
-    paths: ['mobile/**', '.github/workflows/android-native.yml']
   workflow_dispatch:
 jobs:
   compile:

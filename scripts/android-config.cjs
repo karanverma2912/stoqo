@@ -1,7 +1,24 @@
-const fs=require('fs');const path=require('path');const settings=require('../mobile/production.json');
-if(!settings.api_url||!settings.web_url)throw new Error('Set production origins in mobile/production.json before building a release.');
-for(const value of [settings.api_url,settings.web_url]){const url=new URL(value);if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash||url.pathname!=='/')throw new Error('Release origins must be plain HTTPS origins.');}
-const vars={EXPO_PUBLIC_API_URL:settings.api_url,EXPO_PUBLIC_WEB_URL:settings.web_url,ANDROID_VERSION_CODE:String(100+Number(process.env.ANDROID_VERSION_CODE??3))};
-if(process.env.EXPO_PUBLIC_EAS_PROJECT_ID)vars.EXPO_PUBLIC_EAS_PROJECT_ID=process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
-if(process.env.GOOGLE_SERVICES_JSON_BASE64){const file=path.resolve('mobile/google-services.json');fs.writeFileSync(file,Buffer.from(process.env.GOOGLE_SERVICES_JSON_BASE64,'base64'));vars.GOOGLE_SERVICES_JSON=file;}
-fs.appendFileSync(process.env.GITHUB_ENV,Object.entries(vars).map(([k,v])=>`${k}=${v}\n`).join(''));
+const fs = require('fs');
+const path = require('path');
+const settings = require('../mobile/production.json');
+const { resolveReleaseConfig } = require('../mobile/config/release.cjs');
+const version = process.env.GITHUB_ENV
+  ? String(100 + Number(process.env.ANDROID_VERSION_CODE ?? 3))
+  : process.env.ANDROID_VERSION_CODE;
+const config = resolveReleaseConfig(settings, {
+  ...process.env, STOQO_RELEASE_BUILD: 'true', ANDROID_VERSION_CODE: version,
+});
+if (process.env.GITHUB_ENV) {
+  const vars = {
+    EXPO_PUBLIC_API_URL: config.apiUrl, EXPO_PUBLIC_WEB_URL: config.webUrl,
+    ANDROID_VERSION_CODE: String(config.versionCode), STOQO_RELEASE_BUILD: 'true',
+  };
+  if (config.projectId) vars.EXPO_PUBLIC_EAS_PROJECT_ID = config.projectId;
+  if (process.env.GOOGLE_SERVICES_JSON_BASE64) {
+    const file = path.resolve(__dirname, '../mobile/google-services.json');
+    fs.writeFileSync(file, Buffer.from(process.env.GOOGLE_SERVICES_JSON_BASE64, 'base64'));
+    vars.GOOGLE_SERVICES_JSON = file;
+  }
+  fs.appendFileSync(process.env.GITHUB_ENV, Object.entries(vars).map(([k, v]) => `${k}=${v}\n`).join(''));
+}
+console.log('Release connection configuration is valid. No APK was built.');

@@ -72,6 +72,9 @@ const extra: Record<string, string> = {
   "Held carts": "रुके हुए कार्ट",
   "Something needs attention": "कुछ ध्यान देने की ज़रूरत है",
   Continue: "जारी रखें",
+  "Reconnect to your store": "अपने स्टोर से फिर जुड़ें",
+  "Your saved login is still here. Retry when your connection is ready.": "आपका लॉगिन सुरक्षित है। कनेक्शन ठीक होने पर फिर कोशिश करें।",
+  "Use another account": "दूसरा अकाउंट इस्तेमाल करें",
 };
 type Preferences = {
   language: Language;

@@ -1,7 +1,10 @@
 import * as SecureStore from "expo-secure-store";
+import Constants from "expo-constants";
 import type { Envelope } from "./types";
 const SESSION_KEY = "stoqo.native.session";
 let session: string | null = null;
+let generation = 0;
+let storageWrite = Promise.resolve();
 let expired: (() => void) | undefined;
 export function normalizeOrigin(value: string) {
   const url = new URL(value);
@@ -21,22 +24,43 @@ export function normalizeOrigin(value: string) {
   return url.origin;
 }
 export function apiOrigin() {
-  const origin = process.env.EXPO_PUBLIC_API_URL;
+  const origin =
+    Constants.expoConfig?.extra?.apiUrl ?? process.env.EXPO_PUBLIC_API_URL;
   if (!origin)
     throw new Error("This build needs its Stoqo server connection configured.");
   return normalizeOrigin(origin);
+}
+export function webOrigin() {
+  const origin =
+    Constants.expoConfig?.extra?.webUrl ?? process.env.EXPO_PUBLIC_WEB_URL;
+  return origin ? normalizeOrigin(origin) : undefined;
+}
+// A non-secret identity for rejecting work from a previous login.
+export function sessionVersion() {
+  return session ? generation : null;
 }
 export function setExpiredHandler(handler: () => void) {
   expired = handler;
 }
 export async function restoreSession() {
-  session = await SecureStore.getItemAsync(SESSION_KEY);
+  const started = generation;
+  const saved = await SecureStore.getItemAsync(SESSION_KEY);
+  if (generation !== started) return session;
+  session = saved;
+  generation++;
   return session;
 }
 export async function saveSession(token: string | null) {
   session = token;
-  if (token) await SecureStore.setItemAsync(SESSION_KEY, token);
-  else await SecureStore.deleteItemAsync(SESSION_KEY);
+  generation++;
+  // Keep disk writes in login order even when an expiry and logout overlap.
+  const write = storageWrite.catch(() => {}).then(() =>
+    token
+      ? SecureStore.setItemAsync(SESSION_KEY, token)
+      : SecureStore.deleteItemAsync(SESSION_KEY),
+  );
+  storageWrite = write;
+  await write;
 }
 export function sessionHeaders(businessId?: number): Record<string, string> {
   return {
@@ -67,7 +91,7 @@ export async function api<T>(
     path === "assistant/messages" ? 75000 : 45000,
   );
   const isForm = options.body instanceof FormData;
-  const requestSession = session;
+  const requestVersion = sessionVersion();
   try {
     const response = await fetch(`${apiOrigin()}/api/v1/${path}`, {
       ...options,
@@ -91,7 +115,8 @@ export async function api<T>(
     if (!response.ok) {
       if (
         response.status === 401 &&
-        session === requestSession &&
+        requestVersion !== null &&
+        sessionVersion() === requestVersion &&
         !path.startsWith("auth/login")
       )
         expired?.();

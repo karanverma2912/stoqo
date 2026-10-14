@@ -1,9 +1,6 @@
 name: Android release
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['mobile/**', 'scripts/android-*', '.github/workflows/android.yml']
 concurrency:
   group: stoqo-android-release
   cancel-in-progress: false

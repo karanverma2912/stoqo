@@ -1,5 +1,5 @@
 name: Quality gates
-on: [push, pull_request]
+on: workflow_dispatch
 jobs:
   mobile:
     runs-on: ubuntu-latest

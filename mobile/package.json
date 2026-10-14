@@ -49,7 +49,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "export": "expo export --platform android",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "check:release": "node ../scripts/android-config.cjs",
+    "build:apk": "npx eas-cli@latest build --platform android --profile apk",
+    "build:android": "npx eas-cli@latest build --platform android --profile production"
   },
   "private": true
 }

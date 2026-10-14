@@ -9,18 +9,23 @@
 - Retry-safe, persisted mobile write requests and PostgreSQL-backed durable jobs/uploads.
 - Foreground notification connections ignore retired tickets and socket callbacks, deduplicate resume events, recover stalled handshakes, and recheck rejected subscriptions. Pending writes own their navigation scope so an earlier operation cannot replace or clear another operation's saved request.
 - Free Render API/website configuration, permanent encrypted Android signing service and protected GitHub OIDC release workflow.
+- Startup retry with saved-session isolation; store selection and push registration preserve operation order during login changes.
+- Root-level notification launches with store switching, automatic push re-registration for granted permissions, explicit disable persistence and token rotation handling.
+- EAS APK/AAB profiles use the same release-origin validation as manual GitHub builds. Source pushes trigger no GitHub workflows.
 
 ## Verification
 
-14 October follow-up: native typecheck, lint and 25 tests passed locally, including 18 new reconnect and persisted-write regression tests. Website typecheck and all 18 tests also passed. Backend code is unchanged in this follow-up. No new Android binary was built or published, and no GitHub build was awaited, as requested.
+The earlier 14 October follow-up passed website typecheck and all 18 website tests. Website and backend source remain unchanged in this continuation.
 
 The quality-gate run at commit `ba6b0802fe33c68caaf951f56471b3e6cb6e4169` passed Rails database migrations and 104 RSpec examples, frontend typecheck/tests/production build, browser workflows, native typecheck/tests/lint and Android JavaScript export. Native Android compilation is a separate gate; a test APK is not a production-signed launch artifact. Physical-device and live-provider testing remain required.
+
+The combined 14 October continuation passed 43 native tests, TypeScript checks, Expo lint, the Android JavaScript export and manual-workflow trigger validation. Regression cases cover realtime reconnects, retired callbacks, persisted-write isolation, stale authentication failures, delayed secure storage, push registration across login/token changes, opt-out, interrupted registration, invalid notification destinations and the actual Expo manifest. Rails and Next.js source were not changed in this continuation. No cloud APK build was started and no production APK/AAB was produced.
 
 ## Deployment state
 
 Live account checks on 14 October confirm that the Stoqo Supabase project is healthy. Its private `stoqo` schema belongs to the dedicated `stoqo_app` login role, but it contains **zero application tables**: Rails migrations have not run there. No customer records were created. The connected Render workspace has **no Stoqo API or website service**. Render API creation was previously rejected by automatic approval review because generated database and Rails credentials would be transmitted to Render without explicit authorization. Deployment credentials are preserved privately and never committed. No paid resources were selected.
 
-The Android production release deliberately waits while `mobile/production.json` has no confirmed live API/web origins. After authorization: deploy the free API and website, verify the actual session-pooler connection and worker, set origins, build the permanently signed APK/AAB, test two clients against the live API and verify persistent uploads/imports.
+The Android production release deliberately waits while `mobile/production.json` has no confirmed live API/web origins. After authorization: deploy the free API and website, verify the actual session-pooler connection and worker, set origins, build the permanently signed APK/AAB through EAS or a manually requested workflow, test two clients against the live API and verify persistent uploads/imports.
 
 ## Inputs and launch gates remaining
 

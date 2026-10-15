@@ -6,6 +6,7 @@ const webHost = web ? new URL(web).hostname : undefined;
 const config: ExpoConfig = {
   name: "Stoqo",
   slug: "stoqo",
+  owner: "karanverma2912",
   version: "0.3.0",
   scheme: "stoqo",
   orientation: "default",

@@ -1,1 +1,6 @@
-{ "api_url": "https://stoqo-api.onrender.com", "web_url": "https://stoqo-web.onrender.com" }
+{
+  "api_url": "https://stoqo-api.onrender.com",
+  "web_url": "https://stoqo-web.onrender.com",
+  "eas_project_id": "ce5f2f08-55ec-4ea6-b92a-21dd0a20bd4f",
+  "android_cert_sha256": "D8:78:02:D8:60:86:A7:6D:22:80:0D:26:FE:40:4D:1F:A6:61:9A:C5:D0:5B:99:A4:6F:DC:25:9E:43:7D:73:DA"
+}

@@ -13,6 +13,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "24"
+      - key: ANDROID_RELEASE_CERT_SHA256
+        value: "D8:78:02:D8:60:86:A7:6D:22:80:0D:26:FE:40:4D:1F:A6:61:9A:C5:D0:5B:99:A4:6F:DC:25:9E:43:7D:73:DA"
       - key: API_HOST
         fromService: {type: web, name: stoqo-api, property: host}
       - key: API_PORT

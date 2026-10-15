@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { resolveReleaseConfig } from "../config/release.cjs";
@@ -24,6 +25,13 @@ describe("APK release configuration", () => {
     expect(result.apiUrl).toBe("http://192.168.1.3:3001");
     expect(JSON.stringify(result)).not.toContain("server-only");
   });
+  it("preserves project linking across build machines and validates overrides", () => {
+    const projectId = "9e120832-9a9c-487a-9de5-f479f66dcce2";
+    const override = "b3026072-71ab-4e5c-80a7-34e678d7e778";
+    expect(resolveReleaseConfig({ ...settings, eas_project_id: projectId }, {}).projectId).toBe(projectId);
+    expect(resolveReleaseConfig({ ...settings, eas_project_id: projectId }, { EXPO_PUBLIC_EAS_PROJECT_ID: override }).projectId).toBe(override);
+    expect(() => resolveReleaseConfig({ ...settings, eas_project_id: "invalid" }, {})).toThrow("UUID");
+  });
   it("embeds matching origins and app links in the actual Expo public manifest", () => {
     const mobile = fileURLToPath(new URL("../", import.meta.url));
     const stdout = execFileSync(process.execPath, ["-e", "console.log(JSON.stringify(require('@expo/config').getConfig(process.cwd()).exp))"], {
@@ -36,9 +44,11 @@ describe("APK release configuration", () => {
       encoding: "utf8",
     });
     const config = JSON.parse(stdout);
+    const production = JSON.parse(readFileSync(new URL("../production.json", import.meta.url), "utf8"));
     expect(config.extra.apiUrl).toBe(settings.api_url);
     expect(config.extra.webUrl).toBe(settings.web_url);
     expect(config.android.versionCode).toBe(104);
+    expect(config.extra.eas.projectId).toBe(process.env.EXPO_PUBLIC_EAS_PROJECT_ID || production.eas_project_id);
     expect(config.android.intentFilters[0].data[0].host).toBe("stoqo-web.onrender.com");
     expect(stdout).not.toContain("server-only");
   });

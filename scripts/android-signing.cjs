@@ -6,6 +6,7 @@ async function main(){
   const result=await fetch(`${config.api_url}/api/v1/releases/android_credentials`,{method:'POST',headers:{Authorization:`Bearer ${identity}`},signal:AbortSignal.timeout(120000)});if(!result.ok)throw new Error(`Signing service rejected this release (${result.status})`);
   const credentials=await result.json();for(const value of [credentials.keystore,credentials.password])console.log(`::add-mask::${value}`);
   if(credentials.store_type!=='PKCS12'||!credentials.password||!credentials.sha256)throw new Error('Invalid signing credentials');
+  if(config.android_cert_sha256&&credentials.sha256.replaceAll(':','').toUpperCase()!==config.android_cert_sha256.replaceAll(':','').toUpperCase())throw new Error('Signing credentials do not match the canonical Stoqo certificate. Import the existing EAS key before using this release pipeline.');
   const keyPath=path.join(process.env.RUNNER_TEMP,'stoqo-release.p12');fs.writeFileSync(keyPath,Buffer.from(credentials.keystore,'base64'),{mode:0o600});
   fs.appendFileSync(process.env.GITHUB_ENV,`STOQO_RELEASE_KEYSTORE=${keyPath}\nSTOQO_RELEASE_STORE_PASSWORD=${credentials.password}\nSTOQO_RELEASE_KEY_PASSWORD=${credentials.password}\nSTOQO_RELEASE_ALIAS=${credentials.alias}\nSTOQO_RELEASE_CERT_SHA256=${credentials.sha256}\n`);
   const gradlePath='mobile/android/app/build.gradle';let gradle=fs.readFileSync(gradlePath,'utf8');

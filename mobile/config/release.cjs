@@ -23,7 +23,7 @@ function resolveReleaseConfig(settings, env = process.env) {
   const webUrl = origin(env.EXPO_PUBLIC_WEB_URL || settings.web_url, release);
   if (release && (!apiUrl || !webUrl))
     throw new Error("Set the live API and website origins in mobile/production.json or EXPO_PUBLIC_API_URL/EXPO_PUBLIC_WEB_URL before building an APK.");
-  const versionCode = Number(env.ANDROID_VERSION_CODE ?? 3);
+  const versionCode = Number(env.ANDROID_VERSION_CODE ?? 4);
   if (!Number.isSafeInteger(versionCode) || versionCode < 1 || versionCode > 2100000000)
     throw new Error("ANDROID_VERSION_CODE must be a positive Android version number.");
   const projectId = env.EXPO_PUBLIC_EAS_PROJECT_ID || settings.eas_project_id || undefined;

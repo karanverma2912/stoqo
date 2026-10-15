@@ -3,7 +3,7 @@ const path = require('path');
 const settings = require('../mobile/production.json');
 const { resolveReleaseConfig } = require('../mobile/config/release.cjs');
 const version = process.env.GITHUB_ENV
-  ? String(100 + Number(process.env.ANDROID_VERSION_CODE ?? 3))
+  ? String(100 + Number(process.env.ANDROID_VERSION_CODE ?? 4))
   : process.env.ANDROID_VERSION_CODE;
 const config = resolveReleaseConfig(settings, {
   ...process.env, STOQO_RELEASE_BUILD: 'true', ANDROID_VERSION_CODE: version,

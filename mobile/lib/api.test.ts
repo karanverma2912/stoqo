@@ -25,6 +25,13 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Native login isolation and recovery", () => {
+  it("preserves password validation details from a rejected signup", async () => {
+    const { api, ApiError, post } = await import("./api");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: { code: "validation_error", message: "Please check the highlighted details", details: { password: ["is too short (minimum is 12 characters)"] } } }), { status: 422 })));
+    const failure = await api("auth/signup", post({ user: { password: "short" } })).catch((error) => error);
+    expect(failure).toBeInstanceOf(ApiError);
+    expect(failure.details).toEqual({ password: ["is too short (minimum is 12 characters)"] });
+  });
   it("reads the bundled server origins without requiring a GitHub environment", async () => {
     const { apiOrigin, webOrigin } = await import("./api");
     expect(apiOrigin()).toBe("https://stoqo-api.onrender.com");

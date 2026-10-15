@@ -75,6 +75,15 @@ const extra: Record<string, string> = {
   "Reconnect to your store": "अपने स्टोर से फिर जुड़ें",
   "Your saved login is still here. Retry when your connection is ready.": "आपका लॉगिन सुरक्षित है। कनेक्शन ठीक होने पर फिर कोशिश करें।",
   "Use another account": "दूसरा अकाउंट इस्तेमाल करें",
+  "Show password": "पासवर्ड दिखाएँ",
+  "Hide password": "पासवर्ड छिपाएँ",
+  "Use at least 12 characters.": "कम से कम 12 अक्षरों का इस्तेमाल करें।",
+  "Password must be at least 12 characters.": "पासवर्ड कम से कम 12 अक्षरों का होना चाहिए।",
+  "Password is too long. Use fewer characters.": "पासवर्ड बहुत लंबा है। कम अक्षरों का इस्तेमाल करें।",
+  "Enter your name.": "अपना नाम दर्ज करें।",
+  "Enter your email.": "अपना ईमेल दर्ज करें।",
+  "Enter your password.": "अपना पासवर्ड दर्ज करें।",
+  "This email already has an account. Sign in instead.": "इस ईमेल से अकाउंट पहले से बना हुआ है। साइन इन करें।",
 };
 type Preferences = {
   language: Language;

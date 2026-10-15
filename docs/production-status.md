@@ -45,6 +45,14 @@ The website certificate environment is configured and its live association endpo
 
 Next: install and test the verified APK on real phones. The website association route reads the explicit certificate instead of asking the backend to generate signing metadata. The protected backend signing setting is retained; the alternate GitHub signing and verification scripts reject a certificate that differs from the EAS pin. GitHub workflows remain manual-only. Gemini and email remain disabled until their provider setup is available. No paid resources or purchases were selected.
 
+## 16 October follow-up: signup feedback and password visibility
+
+The user confirmed that signup succeeds with a password of at least 12 characters. The native auth screen had discarded the API's field-specific validation details and displayed only the generic "Please check the highlighted details" message.
+
+Version 0.3.1 source (Android version code 4) validates signup passwords before sending the request, shows each validation error beneath its corresponding input, and keeps the minimum-length hint beside the password. Existing-email errors advise signing in. The shared password field includes an accessible eye button to show/hide the value, covering sign-in, signup, reset and change-password fields. English and Hindi labels are included; switching auth modes hides the password again.
+
+All 51 native tests, native TypeScript checks, Expo lint, release configuration validation and the Android JavaScript export pass. API and database source were unchanged. No 0.3.1 APK has been built at this checkpoint: `eas whoami` returned "Not logged in" in the refreshed build environment. Renew Expo device login and reuse the existing canonical EAS keystore for the signed update. The completed 0.3.0 build above remains the last verified APK.
+
 ## Inputs and launch gates remaining
 
 1. Physical-device checks of the completed, signature-verified native APK, including scanning, receipt PDF sharing and foreground realtime delivery. Expo authentication, project linking, permanent EAS signing and the live servers are configured.

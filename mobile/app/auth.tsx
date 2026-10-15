@@ -3,7 +3,8 @@ import { View, Text } from "react-native";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useAuth } from "../lib/auth";
-import { api, post } from "../lib/api";
+import { api, ApiError, post } from "../lib/api";
+import { authValidationDetails, signupErrors, type AuthField, type AuthFieldErrors } from "../lib/auth-validation";
 import { usePreferences } from "../lib/preferences";
 import {
   Button,
@@ -23,18 +24,32 @@ export default function Auth() {
     [name, setName] = useState(""),
     [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
+    [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({}),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false);
+  function updateField(field: AuthField, value: string) {
+    if (field === "name") setName(value);
+    else if (field === "email") setEmail(value);
+    else setPassword(value);
+    setError("");
+    setFieldErrors((current) => current[field] ? {
+      ...current,
+      [field]: mode === "signup" ? signupErrors({ name, email, password, [field]: value })[field] : undefined,
+    } : current);
+  }
   async function submit() {
-    setBusy(true);
     setError("");
     setNotice("");
+    const validation = mode === "signup" ? signupErrors({ name, email, password }) : {};
+    setFieldErrors(validation);
+    if (Object.keys(validation).length) return;
+    setBusy(true);
     try {
       if (mode === "reset") {
         const result = await api<{ message: string }>(
           "auth/forgot_password",
-          post({ email }),
+          post({ email: email.trim() }),
         );
         setNotice(result.data.message);
       } else {
@@ -46,7 +61,11 @@ export default function Auth() {
         router.replace(invite ? "/join" : "/");
       }
     } catch (e) {
-      setError((e as Error).message);
+      if (e instanceof ApiError) {
+        const validation = authValidationDetails(e.details);
+        setFieldErrors(validation.fields);
+        setError(validation.message || (Object.keys(validation.fields).length ? "" : e.message));
+      } else setError((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -82,7 +101,9 @@ export default function Auth() {
             <Field
               label="Your name"
               value={name}
-              onChangeText={setName}
+              onChangeText={(value) => updateField("name", value)}
+              error={fieldErrors.name}
+              editable={!busy}
               autoComplete="name"
               maxLength={100}
             />
@@ -90,7 +111,9 @@ export default function Auth() {
           <Field
             label="Email"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(value) => updateField("email", value)}
+            error={fieldErrors.email}
+            editable={!busy}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -99,11 +122,16 @@ export default function Auth() {
           />
           {mode !== "reset" && (
             <Field
+              key={mode}
               label="Password"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(value) => updateField("password", value)}
+              error={fieldErrors.password}
+              hint={mode === "signup" ? "Use at least 12 characters." : undefined}
+              editable={!busy}
               secureTextEntry
               autoCapitalize="none"
+              autoCorrect={false}
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
               }
@@ -127,27 +155,29 @@ export default function Auth() {
             }
             onPress={() => void submit()}
           />
-          {mode === "signup" && (
-            <Label muted>Choose a password with at least 12 characters.</Label>
-          )}
         </Card>
         <Row>
           <Button
             title={mode === "signup" ? "Sign in" : "Create account"}
             kind="soft"
+            disabled={busy}
             onPress={() => {
               setMode(mode === "signup" ? "login" : "signup");
               setError("");
               setNotice("");
+              setFieldErrors({});
             }}
           />
           {mode !== "signup" && (
             <Button
               title={mode === "reset" ? "Back to sign in" : "Forgot password?"}
               kind="soft"
+              disabled={busy}
               onPress={() => {
                 setMode(mode === "reset" ? "login" : "reset");
                 setError("");
+                setNotice("");
+                setFieldErrors({});
               }}
             />
           )}

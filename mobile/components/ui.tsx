@@ -15,6 +15,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Circle, Path } from "react-native-svg";
 import { router } from "expo-router";
 import { usePreferences } from "../lib/preferences";
 export function Label({
@@ -140,29 +141,83 @@ export function Button({
     </Pressable>
   );
 }
-export function Field({ label, ...props }: TextInputProps & { label: string }) {
+export function Field({
+  label,
+  error,
+  hint,
+  secureTextEntry,
+  ...props
+}: TextInputProps & { label: string; error?: string; hint?: string }) {
   const { colors, tr } = usePreferences();
+  const [passwordVisible, setPasswordVisible] = useState(false);
   return (
     <View style={{ gap: 7 }}>
       <Label>{label}</Label>
-      <TextInput
-        {...props}
-        placeholderTextColor={colors.muted}
-        accessibilityLabel={tr(label)}
-        style={[
-          {
-            color: colors.ink,
-            backgroundColor: colors.bg,
-            borderRadius: 13,
-            minHeight: 49,
-            padding: 13,
-            borderWidth: 1,
-            borderColor: colors.line,
-            fontSize: 16,
-          },
-          props.style,
-        ]}
-      />
+      <View style={{ justifyContent: "center" }}>
+        <TextInput
+          {...props}
+          secureTextEntry={secureTextEntry && !passwordVisible}
+          placeholderTextColor={colors.muted}
+          accessibilityLabel={error ? `${tr(label)}. ${tr(error)}` : tr(label)}
+          accessibilityHint={props.accessibilityHint ?? (hint ? tr(hint) : undefined)}
+          style={[
+            {
+              color: colors.ink,
+              backgroundColor: colors.bg,
+              borderRadius: 13,
+              minHeight: 49,
+              padding: 13,
+              borderWidth: 1,
+              borderColor: colors.line,
+              fontSize: 16,
+            },
+            props.style,
+            secureTextEntry ? { paddingRight: 58 } : undefined,
+            error ? { borderColor: colors.danger } : undefined,
+          ]}
+        />
+        {secureTextEntry ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tr(passwordVisible ? "Hide password" : "Show password")}
+            disabled={props.editable === false}
+            onPress={() => setPasswordVisible((visible) => !visible)}
+            hitSlop={4}
+            style={({ pressed }) => ({
+              position: "absolute",
+              right: 4,
+              width: 44,
+              height: 44,
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Svg
+              accessible={false}
+              width={23}
+              height={23}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={colors.muted}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <Path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+              <Circle cx={12} cy={12} r={3} />
+              {passwordVisible ? <Path d="m3 3 18 18" /> : null}
+            </Svg>
+          </Pressable>
+        ) : null}
+      </View>
+      {error ? (
+        <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ color: colors.danger, fontSize: 13, lineHeight: 19 }}>
+          {tr(error)}
+        </Text>
+      ) : hint ? (
+        <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 19 }}>{tr(hint)}</Text>
+      ) : null}
     </View>
   );
 }

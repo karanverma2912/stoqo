@@ -53,6 +53,14 @@ Version 0.3.1 source (Android version code 4) validates signup passwords before 
 
 All 51 native tests, native TypeScript checks, Expo lint, release configuration validation and the Android JavaScript export pass. API and database source were unchanged. No 0.3.1 APK has been built at this checkpoint: `eas whoami` returned "Not logged in" in the refreshed build environment. Renew Expo device login and reuse the existing canonical EAS keystore for the signed update. The completed 0.3.0 build above remains the last verified APK.
 
+## 16 October follow-up: native UI refresh
+
+The 0.3.1/code 4 source now uses a shared forest/cream/lime palette, Manrope typography, consistent SVG icons and rounded controls across the native app. Sign-in/signup have an animated mode switch, clearer form hierarchy and the field-specific password feedback above. The dashboard, inventory list, checkout, workspace menu, assistant and store setup have new layouts. Shared controls also refresh the remaining utility screens. Theme and Hindi preferences remain available; press, entry, layout and navigation transitions respect the reduced-motion setting.
+
+All 51 regression tests, native TypeScript checks, Expo lint, release configuration validation and the Android JavaScript export pass. A temporary internal browser harness rendered the actual React Native screen components through React Native Web with fixture services. Six interactive flows passed: auth/password/reset, inventory filters and debounced search, decimal checkout totals and held-cart resume, staff menu permissions, business-type selection, and disconnected-assistant help. Thirty-two layout checks passed at 360/430 px in light/dark themes, with no page errors or horizontally overflowing controls. Visual review also corrected a decorative overlap in the smaller auth hero. The harness uses an animation shim; it does not validate native animation timing, device keyboards, camera, microphone or physical-phone behavior.
+
+The app remains a React Native client, with no WebView or web-install wrapper. Font licenses are included in the public Expo manifest. Production services and signing configuration are unchanged. The update is ready for the cloud APK build, but no 0.3.1 APK exists yet: the current CLI session is logged out of Expo. Restore the owner's device login and reuse the existing EAS keystore with frozen credentials; never generate a replacement key. GitHub builds remain manual-only.
+
 ## Inputs and launch gates remaining
 
 1. Physical-device checks of the completed, signature-verified native APK, including scanning, receipt PDF sharing and foreground realtime delivery. Expo authentication, project linking, permanent EAS signing and the live servers are configured.

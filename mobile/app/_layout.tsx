@@ -5,7 +5,15 @@ import {
   useRootNavigationState,
   useSegments,
 } from "expo-router";
-import { AppState } from "react-native";
+import { ActivityIndicator, AppState, View } from "react-native";
+import {
+  useFonts,
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from "@expo-google-fonts/manrope";
 import {
   QueryClient,
   QueryClientProvider,
@@ -13,6 +21,7 @@ import {
 } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { useReducedMotion } from "react-native-reanimated";
 import { PreferencesProvider, usePreferences } from "../lib/preferences";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { CartProvider } from "../lib/cart";
@@ -31,15 +40,24 @@ const queryClient = new QueryClient({
   },
 });
 function Navigation() {
+  const reducedMotion = useReducedMotion();
   const { ready, user, error, refresh, businesses, signOut } = useAuth(),
     { colors } = usePreferences(),
     segments = useSegments(),
     state = useRootNavigationState();
   const [retrying, setRetrying] = useState(false);
   const section = segments[0] as string;
-  const publicSection = ["auth", "join", "verify", "reset-password", "onboarding"].includes(section);
+  const publicSection = [
+    "auth",
+    "join",
+    "verify",
+    "reset-password",
+    "onboarding",
+  ].includes(section);
   // Finish login/invitation redirects before consuming a notification launch.
-  useNotifications(!!state?.key && !error && segments.length > 0 && !publicSection);
+  useNotifications(
+    !!state?.key && !error && segments.length > 0 && !publicSection,
+  );
   useRealtime();
   useEffect(() => {
     const listener = AppState.addEventListener("change", (value) =>
@@ -79,7 +97,9 @@ function Navigation() {
           busy={retrying}
           onPress={() => {
             setRetrying(true);
-            void refresh().catch(() => {}).finally(() => setRetrying(false));
+            void refresh()
+              .catch(() => {})
+              .finally(() => setRetrying(false));
           }}
         />
         <Button
@@ -97,13 +117,33 @@ function Navigation() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: colors.bg },
-          animation: "slide_from_right",
+          animation: reducedMotion ? "none" : "slide_from_right",
         }}
       />
     </>
   );
 }
 export default function Layout() {
+  const [fontsReady, fontError] = useFonts({
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  });
+  if (!fontsReady && !fontError)
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#F5F5F0",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ActivityIndicator color="#245A40" />
+      </View>
+    );
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>

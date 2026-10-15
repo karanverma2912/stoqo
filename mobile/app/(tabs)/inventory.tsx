@@ -1,35 +1,43 @@
-import React, { useState } from "react";
-import { FlatList, Image, Text, View, RefreshControl } from "react-native";
+import React, { useEffect, useState } from "react";
+import { FlatList, View, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useAuth } from "../../lib/auth";
-import { api, apiOrigin, money, sessionHeaders, units } from "../../lib/api";
+import { api } from "../../lib/api";
+import { permissions } from "../../lib/permissions";
 import { usePreferences } from "../../lib/preferences";
 import {
-  Button,
-  Card,
+  EmptyState,
   ErrorBox,
   Field,
   Heading,
+  IconButton,
   Label,
   Loading,
-  Pill,
-  Row,
+  Motion,
   Screen,
+  Segmented,
   styles,
 } from "../../components/ui";
+import { ProductRow } from "../../components/product-row";
 import type { Product } from "../../lib/types";
 export default function Inventory() {
   const { business } = useAuth(),
     { colors } = usePreferences(),
-    [q, setQ] = useState(""),
+    p = permissions(business?.role);
+  const [q, setQ] = useState(""),
+    [search, setSearch] = useState(""),
     [filter, setFilter] = useState("all");
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(q.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [q]);
   const result = useInfiniteQuery({
-    queryKey: ["store", business?.id, "products", q, filter],
+    queryKey: ["store", business?.id, "products", search, filter],
     initialPageParam: 1,
     queryFn: ({ pageParam }) =>
       api<Product[]>(
-        `products?page=${pageParam}&q=${encodeURIComponent(q)}&filter=${filter}`,
+        `products?page=${pageParam}&q=${encodeURIComponent(search)}&filter=${filter}`,
         {},
         business?.id,
       ),
@@ -37,57 +45,73 @@ export default function Inventory() {
       last.meta.page < last.meta.pages ? last.meta.page + 1 : undefined,
     enabled: !!business,
   });
-  const products = result.data?.pages.flatMap((p) => p.data) ?? [];
+  const products = result.data?.pages.flatMap((page) => page.data) ?? [];
+  const searching = !!search || filter !== "all";
   return (
     <Screen scroll={false}>
-      <Heading
-        title="Inventory"
-        description="Every product. Every little movement."
-      />
+      <View style={styles.split}>
+        <View style={{ flex: 1 }}>
+          <Heading
+            title="Your inventory"
+            description="A place for every product."
+          />
+        </View>
+        <IconButton
+          name="scan"
+          label="Scan product"
+          onPress={() => router.push("/scan?mode=inventory")}
+        />
+        {p.stock ? (
+          <IconButton
+            name="plus"
+            label="Add product"
+            kind="primary"
+            onPress={() => router.push("/product/new")}
+          />
+        ) : null}
+      </View>
       <Field
-        label="Search"
+        label="Find a product"
+        icon="search"
         value={q}
         onChangeText={setQ}
         placeholder="Name, SKU or barcode"
+        autoCorrect={false}
+        returnKeyType="search"
       />
-      <Row>
-        {["all", "low", "out"].map((v) => (
-          <Pill
-            key={v}
-            label={
-              v === "all" ? "All" : v === "low" ? "Low stock" : "Out of stock"
-            }
-            active={filter === v}
-            onPress={() => setFilter(v)}
-          />
-        ))}
-      </Row>
-      <Row>
-        <View style={styles.grow}>
-          <Button
-            title="Add product"
-            onPress={() => router.push("/product/new")}
-          />
-        </View>
-        <Button
-          title="Scan"
-          kind="soft"
-          onPress={() => router.push("/scan?mode=inventory")}
-        />
-      </Row>
+      <Segmented
+        options={[
+          { value: "all", label: "All products" },
+          { value: "low", label: "Low stock" },
+          { value: "out", label: "Out of stock" },
+        ]}
+        value={filter}
+        onChange={setFilter}
+      />
+      <View style={styles.split}>
+        <Label size={12} weight="bold">
+          {searching ? "Search results" : "Your products"}
+        </Label>
+        <Label size={11} muted>
+          {result.data ? `${result.data.pages[0].meta.total} products` : ""}
+        </Label>
+      </View>
       <ErrorBox message={result.error?.message} />
       {result.isLoading ? (
         <Loading />
       ) : (
         <FlatList
           data={products}
-          keyExtractor={(p) => String(p.id)}
-          contentContainerStyle={{ gap: 12, paddingBottom: 25 }}
+          keyExtractor={(product) => String(product.id)}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ gap: 11, paddingBottom: 25 }}
           refreshControl={
             <RefreshControl
               refreshing={result.isRefetching}
               onRefresh={() => void result.refetch()}
               tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
           onEndReached={() => {
@@ -96,70 +120,52 @@ export default function Inventory() {
           }}
           onEndReachedThreshold={0.4}
           ListEmptyComponent={
-            <Card>
-              <Label>No products found</Label>
-              <Label muted>Add your first product or try another search.</Label>
-            </Card>
+            result.isError ? null : (
+              <EmptyState
+                title={
+                  searching
+                    ? "No matches just yet."
+                    : "Good things start small."
+                }
+                description={
+                  searching
+                    ? "Try another name, barcode or stock filter."
+                    : "Add your first product and give your stock a home."
+                }
+                action={
+                  searching
+                    ? "Clear filters"
+                    : p.stock
+                      ? "Add your first product"
+                      : undefined
+                }
+                onAction={
+                  searching
+                    ? () => {
+                        setQ("");
+                        setFilter("all");
+                      }
+                    : () => router.push("/product/new")
+                }
+              />
+            )
           }
           ListFooterComponent={result.isFetchingNextPage ? <Loading /> : null}
-          renderItem={({ item: p }) => (
-            <Card onPress={() => router.push(`/product/${p.id}`)}>
-              <View style={styles.split}>
-                {p.image_path ? (
-                  <Image
-                    source={{
-                      uri: `${apiOrigin()}${p.image_path}`,
-                      headers: sessionHeaders(business?.id),
-                    }}
-                    style={{ width: 52, height: 52, borderRadius: 12 }}
-                  />
-                ) : (
-                  <View
-                    style={{
-                      width: 52,
-                      height: 52,
-                      borderRadius: 12,
-                      backgroundColor: colors.soft,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: colors.primary,
-                        fontSize: 23,
-                        fontWeight: "800",
-                      }}
-                    >
-                      {p.name[0]}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.grow}>
-                  <Label>{p.display_name || p.name}</Label>
-                  <Label muted>
-                    {money(p.selling_price, business?.currency)}
-                  </Label>
-                </View>
-                <View>
-                  <Text
-                    style={{
-                      color:
-                        p.stock_status === "healthy"
-                          ? colors.ink
-                          : colors.danger,
-                      fontSize: 20,
-                      fontWeight: "800",
-                      textAlign: "right",
-                    }}
-                  >
-                    {units(p.current_stock)}
-                  </Text>
-                  <Label muted>{p.unit}</Label>
-                </View>
-              </View>
-            </Card>
-          )}
+          renderItem={({ item, index }) =>
+            index < 4 ? (
+              <Motion delay={index * 45}>
+                <ProductRow
+                  product={item}
+                  onPress={() => router.push(`/product/${item.id}`)}
+                />
+              </Motion>
+            ) : (
+              <ProductRow
+                product={item}
+                onPress={() => router.push(`/product/${item.id}`)}
+              />
+            )
+          }
         />
       )}
     </Screen>

@@ -1,7 +1,13 @@
 import type { ExpoConfig } from "expo/config";
 import settings from "./production.json";
+import fontLicenses from "./assets/licenses/fonts.json";
 import { resolveReleaseConfig } from "./config/release.cjs";
-const { apiUrl, webUrl: web, projectId, versionCode } = resolveReleaseConfig(settings);
+const {
+  apiUrl,
+  webUrl: web,
+  projectId,
+  versionCode,
+} = resolveReleaseConfig(settings);
 const webHost = web ? new URL(web).hostname : undefined;
 const config: ExpoConfig = {
   name: "Stoqo",
@@ -51,6 +57,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
+    "expo-font",
     "expo-secure-store",
     [
       "expo-camera",
@@ -81,7 +88,12 @@ const config: ExpoConfig = {
     ],
   ],
   // Only public connection information is embedded in native builds.
-  extra: { apiUrl, webUrl: web, ...(projectId ? { eas: { projectId } } : {}) },
+  extra: {
+    apiUrl,
+    webUrl: web,
+    fontLicenses,
+    ...(projectId ? { eas: { projectId } } : {}),
+  },
   updates: { enabled: false },
   experiments: { typedRoutes: false },
   web: {

@@ -14,7 +14,8 @@ import {
   Field,
   Heading,
   Label,
-  Pill,
+  SectionTitle,
+  Segmented,
   Row,
   Screen,
   confirm,
@@ -48,33 +49,37 @@ export default function Settings() {
     <Screen title="Settings" back>
       <Heading title={user?.name ?? "Your account"} description={user?.email} />
       <ErrorBox message={error} />
-      {notice && <Label>{notice}</Label>}
+      {notice ? <Label>{notice}</Label> : null}
       <Card>
-        <Label>Language</Label>
-        <Row>
-          {(["en", "hi"] as const).map((v) => (
-            <Pill
-              key={v}
-              label={v === "hi" ? "हिन्दी" : "English"}
-              active={prefs.language === v}
-              onPress={() => prefs.setLanguage(v)}
-            />
-          ))}
-        </Row>
-        <Label>Appearance</Label>
-        <Row>
-          {(["system", "light", "dark"] as const).map((v) => (
-            <Pill
-              key={v}
-              label={v}
-              active={prefs.theme === v}
-              onPress={() => prefs.setTheme(v)}
-            />
-          ))}
-        </Row>
+        <SectionTitle title="Make it feel like you" />
+        <Label weight="bold" size={12}>
+          Language
+        </Label>
+        <Segmented
+          options={[
+            { value: "en", label: "English" },
+            { value: "hi", label: "हिन्दी" },
+          ]}
+          value={prefs.language}
+          onChange={(value) => prefs.setLanguage(value as "en" | "hi")}
+        />
+        <Label weight="bold" size={12}>
+          Appearance
+        </Label>
+        <Segmented
+          options={[
+            { value: "system", label: "System" },
+            { value: "light", label: "Light" },
+            { value: "dark", label: "Dark" },
+          ]}
+          value={prefs.theme}
+          onChange={(value) =>
+            prefs.setTheme(value as "system" | "light" | "dark")
+          }
+        />
       </Card>
       <Card>
-        <Heading title="Background alerts" />
+        <SectionTitle title="Background alerts" />
         <Label muted>
           Receive store activity on each phone where you are signed in.
         </Label>
@@ -83,7 +88,7 @@ export default function Settings() {
           busy={busy}
           onPress={() =>
             void run(async () => {
-              if (!await registerPush()) return;
+              if (!(await registerPush())) return;
               setNotice("Background alerts enabled on this phone.");
             })
           }
@@ -102,7 +107,7 @@ export default function Settings() {
       </Card>
       {p.manage && (
         <Card>
-          <Heading title="Store AI assistant" />
+          <SectionTitle title="Store AI assistant" />
           <Label muted>
             When enabled, your questions and permitted store data are sent to
             Google Gemini. Customer contact details, passwords and login tokens
@@ -143,7 +148,7 @@ export default function Settings() {
         </Card>
       )}
       <Card>
-        <Heading title="Account security" />
+        <SectionTitle title="Account security" />
         <Field
           label="Current password"
           value={current}
@@ -152,6 +157,7 @@ export default function Settings() {
         />
         <Field
           label="New password"
+          hint="Use at least 12 characters."
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -208,7 +214,7 @@ export default function Settings() {
         )}
       </Card>
       <Card>
-        <Label>Privacy & support</Label>
+        <SectionTitle title="Privacy & support" />
         {web && (
           <Row>
             <Button
@@ -276,7 +282,7 @@ export default function Settings() {
           </>
         )}
       </Card>
-      <Label muted>Stoqo 0.3 · Your stock. In a good place.</Label>
+      <Label muted>Stoqo 0.3.1 · Your stock. In a good place.</Label>
     </Screen>
   );
 }

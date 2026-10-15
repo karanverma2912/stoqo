@@ -1,21 +1,30 @@
 import React, { useState } from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
+import Animated from "react-native-reanimated";
+import { AuthHero } from "../components/auth-hero";
+import { softLayout } from "../components/motion";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useAuth } from "../lib/auth";
 import { api, ApiError, post } from "../lib/api";
-import { authValidationDetails, signupErrors, type AuthField, type AuthFieldErrors } from "../lib/auth-validation";
+import {
+  authValidationDetails,
+  signupErrors,
+  type AuthField,
+  type AuthFieldErrors,
+} from "../lib/auth-validation";
 import { usePreferences } from "../lib/preferences";
 import {
   Button,
   Card,
   ErrorBox,
   Field,
-  Heading,
   Label,
-  Row,
   Screen,
-  FadeIn,
+  Segmented,
+  Motion,
+  Tap,
+  Icon,
 } from "../components/ui";
 export default function Auth() {
   const auth = useAuth(),
@@ -33,15 +42,37 @@ export default function Auth() {
     else if (field === "email") setEmail(value);
     else setPassword(value);
     setError("");
-    setFieldErrors((current) => current[field] ? {
-      ...current,
-      [field]: mode === "signup" ? signupErrors({ name, email, password, [field]: value })[field] : undefined,
-    } : current);
+    setFieldErrors((current) =>
+      current[field]
+        ? {
+            ...current,
+            [field]:
+              mode === "signup"
+                ? signupErrors({ name, email, password, [field]: value })[field]
+                : undefined,
+          }
+        : current,
+    );
   }
-  async function submit() {
+  function changeMode(next: "login" | "signup" | "reset") {
+    setMode(next);
     setError("");
     setNotice("");
-    const validation = mode === "signup" ? signupErrors({ name, email, password }) : {};
+    setFieldErrors({});
+  }
+  async function submit() {
+    if (busy) return;
+    setError("");
+    setNotice("");
+    const validation: AuthFieldErrors =
+      mode === "signup"
+        ? signupErrors({ name, email, password })
+        : {
+            ...(!email.trim() ? { email: "Enter your email." } : {}),
+            ...(mode === "login" && !password
+              ? { password: "Enter your password." }
+              : {}),
+          };
     setFieldErrors(validation);
     if (Object.keys(validation).length) return;
     setBusy(true);
@@ -64,7 +95,10 @@ export default function Auth() {
       if (e instanceof ApiError) {
         const validation = authValidationDetails(e.details);
         setFieldErrors(validation.fields);
-        setError(validation.message || (Object.keys(validation.fields).length ? "" : e.message));
+        setError(
+          validation.message ||
+            (Object.keys(validation.fields).length ? "" : e.message),
+        );
       } else setError((e as Error).message);
     } finally {
       setBusy(false);
@@ -72,117 +106,164 @@ export default function Auth() {
   }
   return (
     <Screen>
-      <FadeIn>
-        <View style={{ paddingVertical: 30, gap: 12 }}>
-          <Text
-            style={{
-              color: colors.primary,
-              fontSize: 51,
-              fontWeight: "900",
-              letterSpacing: -3,
-            }}
-          >
-            stoqo.
-          </Text>
-          <Label>Your stock. In a good place.</Label>
-        </View>
-        <Heading
-          title={
-            mode === "signup"
-              ? "Create your account"
-              : mode === "reset"
-                ? "Reset your password"
-                : "Welcome back."
-          }
-          description="One account for your stores, team and everyday sales."
+      <Motion>
+        <AuthHero />
+      </Motion>
+      {mode !== "reset" ? (
+        <Segmented
+          options={[
+            { value: "login", label: "Sign in" },
+            { value: "signup", label: "Create account" },
+          ]}
+          value={mode}
+          disabled={busy}
+          onChange={(value) => changeMode(value as "login" | "signup")}
         />
-        <Card>
-          {mode === "signup" && (
+      ) : (
+        <Tap
+          accessibilityRole="button"
+          accessibilityLabel="Back to sign in"
+          disabled={busy}
+          onPress={() => changeMode("login")}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 7,
+            minHeight: 44,
+          }}
+        >
+          <Icon name="back" size={18} color={colors.primary} />
+          <Label weight="bold" color={colors.primary}>
+            Back to sign in
+          </Label>
+        </Tap>
+      )}
+      <Animated.View layout={softLayout}>
+        <Motion key={mode}>
+          <Card style={{ padding: 23, gap: 19 }}>
+            <View style={{ gap: 5, marginBottom: 2 }}>
+              <Label size={24} weight="extra" style={{ letterSpacing: -0.8 }}>
+                {mode === "signup"
+                  ? "Make room for growth."
+                  : mode === "reset"
+                    ? "Let's get you back in."
+                    : "Welcome back."}
+              </Label>
+              <Label muted size={12}>
+                {mode === "signup"
+                  ? "Create one account for all your stores."
+                  : mode === "reset"
+                    ? "We'll send a reset link to your email."
+                    : "Your store is ready when you are."}
+              </Label>
+            </View>
+            {mode === "signup" ? (
+              <Field
+                label="Your name"
+                icon="user"
+                placeholder="Enter your full name"
+                value={name}
+                onChangeText={(value) => updateField("name", value)}
+                error={fieldErrors.name}
+                editable={!busy}
+                autoComplete="name"
+                maxLength={100}
+              />
+            ) : null}
             <Field
-              label="Your name"
-              value={name}
-              onChangeText={(value) => updateField("name", value)}
-              error={fieldErrors.name}
+              label="Email address"
+              icon="mail"
+              placeholder="you@yourstore.com"
+              value={email}
+              onChangeText={(value) => updateField("email", value)}
+              error={fieldErrors.email}
               editable={!busy}
-              autoComplete="name"
-              maxLength={100}
-            />
-          )}
-          <Field
-            label="Email"
-            value={email}
-            onChangeText={(value) => updateField("email", value)}
-            error={fieldErrors.email}
-            editable={!busy}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="email"
-            maxLength={254}
-          />
-          {mode !== "reset" && (
-            <Field
-              key={mode}
-              label="Password"
-              value={password}
-              onChangeText={(value) => updateField("password", value)}
-              error={fieldErrors.password}
-              hint={mode === "signup" ? "Use at least 12 characters." : undefined}
-              editable={!busy}
-              secureTextEntry
+              keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-              autoComplete={
-                mode === "login" ? "current-password" : "new-password"
-              }
+              autoComplete="email"
+              maxLength={254}
             />
-          )}
-          <ErrorBox message={error || auth.error} />
-          {notice && <Label>{notice}</Label>}
-          <Button
-            title={
-              mode === "signup"
-                ? "Create account"
-                : mode === "reset"
-                  ? "Send reset link"
-                  : "Sign in"
-            }
-            busy={busy}
-            disabled={
-              !email ||
-              (mode !== "reset" && !password) ||
-              (mode === "signup" && !name)
-            }
-            onPress={() => void submit()}
-          />
-        </Card>
-        <Row>
-          <Button
-            title={mode === "signup" ? "Sign in" : "Create account"}
-            kind="soft"
-            disabled={busy}
-            onPress={() => {
-              setMode(mode === "signup" ? "login" : "signup");
-              setError("");
-              setNotice("");
-              setFieldErrors({});
-            }}
-          />
-          {mode !== "signup" && (
+            {mode !== "reset" ? (
+              <Field
+                key={mode}
+                label="Password"
+                placeholder={
+                  mode === "signup"
+                    ? "Choose a secure password"
+                    : "Enter your password"
+                }
+                value={password}
+                onChangeText={(value) => updateField("password", value)}
+                error={fieldErrors.password}
+                hint={
+                  mode === "signup" ? "Use at least 12 characters." : undefined
+                }
+                editable={!busy}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
+                returnKeyType="go"
+                onSubmitEditing={() => void submit()}
+              />
+            ) : null}
+            {mode === "login" ? (
+              <Tap
+                accessibilityRole="button"
+                disabled={busy}
+                onPress={() => changeMode("reset")}
+                style={{
+                  alignSelf: "flex-end",
+                  paddingVertical: 7,
+                  minHeight: 32,
+                }}
+                hitSlop={6}
+              >
+                <Label size={12} weight="bold" color={colors.primary}>
+                  Forgot password?
+                </Label>
+              </Tap>
+            ) : null}
+            <ErrorBox message={error || auth.error} />
+            {notice ? (
+              <View
+                style={{
+                  backgroundColor: colors.soft,
+                  borderRadius: 14,
+                  padding: 13,
+                }}
+              >
+                <Label size={13}>{notice}</Label>
+              </View>
+            ) : null}
             <Button
-              title={mode === "reset" ? "Back to sign in" : "Forgot password?"}
-              kind="soft"
-              disabled={busy}
-              onPress={() => {
-                setMode(mode === "reset" ? "login" : "reset");
-                setError("");
-                setNotice("");
-                setFieldErrors({});
-              }}
+              title={
+                mode === "signup"
+                  ? "Create my account"
+                  : mode === "reset"
+                    ? "Send reset link"
+                    : "Let's go"
+              }
+              trailingIcon="arrow"
+              busy={busy}
+              disabled={
+                !email ||
+                (mode !== "reset" && !password) ||
+                (mode === "signup" && !name)
+              }
+              onPress={() => void submit()}
             />
-          )}
-        </Row>
-      </FadeIn>
+          </Card>
+        </Motion>
+      </Animated.View>
+      <View style={{ alignItems: "center", paddingBottom: 10 }}>
+        <Label muted size={11}>
+          One account. Every store.
+        </Label>
+      </View>
     </Screen>
   );
 }

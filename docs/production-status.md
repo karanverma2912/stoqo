@@ -15,7 +15,7 @@
 
 ## Verification
 
-The earlier 14 October follow-up passed website typecheck and all 18 website tests. Website and backend source remain unchanged in this continuation.
+The earlier 14 October follow-up passed website typecheck and all 18 website tests. The 15 October deployment follow-up passed website typecheck, all 23 website tests and a production build. Five new cases cover trusted public HTTPS origins behind the hosting proxy, rejected foreign/missing origins, custom domains, local development and invalid configuration.
 
 The quality-gate run at commit `ba6b0802fe33c68caaf951f56471b3e6cb6e4169` passed Rails database migrations and 104 RSpec examples, frontend typecheck/tests/production build, browser workflows, native typecheck/tests/lint and Android JavaScript export. Native Android compilation is a separate gate; a test APK is not a production-signed launch artifact. Physical-device and live-provider testing remain required.
 
@@ -23,19 +23,23 @@ The combined 14 October continuation passed 43 native tests, TypeScript checks, 
 
 ## Deployment state
 
-Live account checks on 15 October confirm that the Stoqo Supabase project is healthy. Its private `stoqo` schema belongs to the dedicated `stoqo_app` login role, but it contains **zero application tables**: Rails migrations have not run there. No customer records were created.
+Live checks on 15 October confirm that the Stoqo Supabase project is connected to the Rails API. All migrations ran successfully, and its private `stoqo` schema now contains **52 tables**, owned by the dedicated `stoqo_app` role. The supplied session pooler is `aws-0-ap-south-1.pooler.supabase.com:5432`; the API uses the dedicated application's pooled username and TLS.
 
-The free Render `stoqo-web` service is now live at **https://stoqo-web.onrender.com**. The home page and `/login` returned HTTP 200, and recent error logs were empty. `/api/health` returned HTTP 503 with `{"status":"unavailable"}` because the Rails API is not deployed. Loading the website is not proof that login, stock or billing can work. Reuse this existing website service when connecting the API.
+Both free Render services are live: **https://stoqo-web.onrender.com** and **https://stoqo-api.onrender.com**. The website's server-only `API_URL` points to the API. API `/ready` and website `/api/health` returned HTTP 200 with `{"status":"ready"}` after connection. A later external read timed out during live verification, so successful health responses alone must not be treated as complete phone or workflow testing.
 
-The user's 15 October approval covers storing the saved database password and Rails secret in the connected Render account. The previous permission blocker must not be asked again. Credentials are preserved privately and were not committed. The remaining database connection input is the project's actual **session-pooler hostname**; the saved setup does not contain it, and the available Supabase connection tools do not return the pooler configuration. Obtain the hostname from the project's Connect panel; do not guess it from the project region or reset the database password.
+The completed live website-to-API smoke test passed signup, an HttpOnly session cookie, current-user lookup, store creation, product creation, repeated product/stock requests applying once, stock readback, a durable CSV import completing in the worker and notification retrieval. The temporary test stores were deleted and the test accounts disabled through account removal. The first smoke run hit an external read timeout and cleaned up successfully; the subsequent run completed. This does not replace barcode/camera, checkout/billing or physical-device checks.
 
-There is still **no published APK or signed launch artifact**. The current Expo CLI reports `Not logged in`, and no Expo project ID is configured. The earlier successful Android-release workflow runs skipped their build while origins were missing; they do not establish that an APK exists. `mobile/production.json` now contains the verified web origin but deliberately leaves `api_url` empty. The release validation continues to stop APK builds until a real API origin is configured.
+The user's explicit 15 October "Sure" approved the saved database password and Rails secret being stored in the connected Render Backend workspace. Service creation succeeded with that approval. Credentials are configured on the API, preserved privately and excluded from source and native configuration. Do not request this permission again or reset the database password.
 
-Next: obtain the session-pooler hostname, deploy the free API using the saved credentials, verify database migrations and the durable worker, connect the website's server-only `API_URL`, confirm `/ready` and `/api/health`, set the native API origin, configure build authentication/signing, build the APK/AAB and test two phones. No paid resources or purchases were selected.
+The first deployment exposed a Solid Queue/Puma integration failure: the supervisor environment variable did not select the plugin's async mode. The committed correction explicitly sets `solid_queue_mode` and uses a single Puma process for the embedded queue. Live logs and fresh database heartbeats confirm a supervisor, dispatcher, worker and scheduler are running. The website's public-origin check also needed to use Render's trusted external URL after TLS termination; live checks now reject missing/foreign origins while legitimate HTTPS requests reach the API.
+
+There is still **no published APK or signed launch artifact**. Expo CLI authentication and project linking remain outstanding. The earlier successful Android-release workflow runs skipped their build while origins were missing; they do not establish that an APK exists. `mobile/production.json` now contains both verified public HTTPS origins, and release validation, native typecheck, lint and all 43 native tests pass. The CLI supports phone-browser device login; no Expo password needs to be placed in source.
+
+Next: authenticate Expo, link the project, configure permanent signing, build the APK, verify its signature and test it on real phones. No existing signing-key row was present when checked. Preserve one canonical signing key when selecting EAS and align the website's advertised Android certificate with it before installation. The backend's current metadata endpoint can generate a backend key when called; avoid accidentally creating a second signing identity for EAS. Do not later run the alternate GitHub signing pipeline with a different key. Gemini and email remain disabled until their provider setup is available. No paid resources or purchases were selected.
 
 ## Inputs and launch gates remaining
 
-1. The Supabase session-pooler hostname, followed by verified Rails API deployment and migrations. Credential-storage authorization has already been received.
+1. Expo build authentication, project linking, permanent signing and a real APK build, followed by physical-device checks. Database connection, API deployment and migrations are complete.
 2. A server-only Gemini API key from a free API project; Gemini Pro consumer account access does not configure the API here. Enable AI per store only after reviewing Google's API data-use terms.
 3. HTTPS email-provider key and verified sender; a support mailbox. Automatic invitation/recovery email cannot be verified until configured.
 4. Expo project/Firebase configuration and FCM credentials for background Android push; Apple signing/APNs credentials for iOS. Foreground realtime does not require those push credentials.

@@ -1,4 +1,5 @@
 import { apiOrigin } from "@/lib/api-origin";
+import { isSameOriginRequest } from "@/lib/request-origin";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 const allowed = new Set([
@@ -34,7 +35,7 @@ async function proxy(
     );
   if (
     !["GET", "HEAD"].includes(req.method) &&
-    req.headers.get("origin") !== req.nextUrl.origin
+    !isSameOriginRequest(req.nextUrl.origin, req.headers.get("origin"))
   )
     return NextResponse.json(
       { error: { message: "Request origin rejected" } },

@@ -59,7 +59,17 @@ The 0.3.1/code 4 source now uses a shared forest/cream/lime palette, Manrope typ
 
 All 51 regression tests, native TypeScript checks, Expo lint, release configuration validation and the Android JavaScript export pass. A temporary internal browser harness rendered the actual React Native screen components through React Native Web with fixture services. Six interactive flows passed: auth/password/reset, inventory filters and debounced search, decimal checkout totals and held-cart resume, staff menu permissions, business-type selection, and disconnected-assistant help. Thirty-two layout checks passed at 360/430 px in light/dark themes, with no page errors or horizontally overflowing controls. Visual review also corrected a decorative overlap in the smaller auth hero. The harness uses an animation shim; it does not validate native animation timing, device keyboards, camera, microphone or physical-phone behavior.
 
-The app remains a React Native client, with no WebView or web-install wrapper. Font licenses are included in the public Expo manifest. Production services and signing configuration are unchanged. The update is ready for the cloud APK build, but no 0.3.1 APK exists yet: the current CLI session is logged out of Expo. Restore the owner's device login and reuse the existing EAS keystore with frozen credentials; never generate a replacement key. GitHub builds remain manual-only.
+The app remains a React Native client, with no WebView or web-install wrapper. Font licenses are included in the public Expo manifest. Production services and signing configuration are unchanged. At this UI-source checkpoint, the CLI was logged out of Expo and the APK build was pending. The completed signed build is recorded below. GitHub builds remain manual-only.
+
+## 16 October release: signed native Android 0.3.1
+
+**The updated native APK is built, downloaded and verified.** The owner completed Expo device login. EAS build [`608d82d9-db1f-47d7-9941-cab8293216f7`](https://expo.dev/accounts/karanverma2912/projects/stoqo/builds/608d82d9-db1f-47d7-9941-cab8293216f7) finished successfully at **2026-10-16 05:28:51 UTC**, using profile `apk`, version **0.3.1/code 4** and source commit `17a626f49cc423b6c09f0c31df2abb6c5b165e15`. It reused `Build Credentials 3CqePvD7wZ` with frozen credentials; the permanent key was preserved. No GitHub build or store submission was triggered.
+
+`Stoqo-0.3.1-Android.apk` is **132,063,245 bytes**. SHA-256: `5ca69df253aa739d562729dd7a6ff1a09a391d372bde0e74af3ceae04f07d711`. Android `apksigner` verifies the release signature and its certificate matches the canonical pin in `mobile/production.json`. The shared release verifier accepts the APK and rejects an intentionally mismatched certificate.
+
+Android metadata confirms `com.stoqo.app`, version 0.3.1/code 4, minimum API 24, target API 36 and a non-debuggable release. The artifact contains the React Native libraries for arm64-v8a, armeabi-v7a, x86 and x86_64, a compiled Hermes application bundle, the new UI strings/fonts, and the production API/web origins in the embedded Expo manifest. Its Manrope license notice is present. This is the React Native app; the archived WebView wrapper was not used.
+
+API `/ready` and website `/api/health` both returned HTTP 200 with `status: ready` during this release. The website's cold response took about 50 seconds on the existing free service. No backend, database, provider or billing settings were changed. Gemini, email and background-push provider configuration remain separate launch work. Install and exercise the updated APK on physical phones; binary verification and the fixture UI checks above do not replace device testing.
 
 ## Inputs and launch gates remaining
 

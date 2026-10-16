@@ -291,7 +291,7 @@ export default function Settings() {
           </>
         )}
       </Card>
-      <Label muted>Stoqo 0.3.1 · Your stock. In a good place.</Label>
+      <Label muted>Stoqo 0.3.2 · Your stock. In a good place.</Label>
     </Screen>
   );
 }

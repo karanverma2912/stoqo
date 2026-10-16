@@ -4,6 +4,29 @@ All JSON success responses: `{ "data": ..., "meta": ... }`.
 Errors: `{ "error": { "code": "validation_error", "message": "...", "details": {} } }`.
 Authenticated requests require `Authorization: Bearer <token>`. Business routes additionally require `X-Business-Id`. Browser clients use `/api/backend/*`, which manages the HttpOnly cookie. 401 means sign in, 403 denied permission, 404 not found/inaccessible, 402 expired trial write, 422 invalid input, 429 rate limited.
 
+## Request limits
+
+Limits apply on the server before route handlers run. Overlapping limits all apply; blocked requests do not perform the requested operation. Windows are fixed, so a short burst can straddle a window boundary.
+
+| Traffic | Scope | Limit |
+|---|---|---|
+| API requests | IP | 600 / minute |
+| Auth POST requests | IP | 20 / minute |
+| Signup | IP | 5 / 10 minutes |
+| Login | Normalized email | 10 / 5 minutes |
+| Password recovery / email verification | IP | 10 / 10 minutes |
+| Forgot-password emails | Normalized email | 3 / 10 minutes |
+| API requests with a session | Session | 240 / minute |
+| Writes with a session | Session | 90 / minute |
+| Assistant messages | Session | 8 / minute |
+| Android signing credentials | IP | 10 / minute |
+
+Email and session discriminators are SHA-256 hashes; passwords and raw tokens are never cache keys. Login normalization matches authentication (`strip.downcase`). JSON and form bodies are supported. On Render, IP limits use the edge-set `CF-Connecting-IP`; elsewhere they use the socket address and ignore visitor-supplied forwarding headers. Keep direct untrusted traffic away from the Render private network. The web proxy's IP bucket is shared by web visitors when it does not forward an edge identity; email/session limits still apply separately.
+
+`GET /up`, `GET /ready` and CORS preflight are outside API limits. The scheduled 10-minute readiness check does not consume store quotas. A 429 has `Cache-Control: no-store`, `Retry-After` in seconds, `RateLimit-Limit`, `RateLimit-Remaining: 0` and `RateLimit-Reset` (Unix seconds). The JSON error includes `code: rate_limited`, empty `details`, and numeric `retry_after`. The native app shows the wait and does not automatically retry a blocked query or mutation. Explicit retries of stock/sale writes retain their existing idempotency keys.
+
+The current free pilot has one Puma process and a bounded 8 MB in-process limiter cache, reset by a server restart/deploy. Before scaling to multiple processes or instances, configure `RATE_LIMIT_REDIS_URL` with a dedicated Redis database for shared counters (`REDIS_URL` is accepted as a fallback). No Redis service or paid resource is provisioned by this change. Redis cache availability must be monitored: Rails' Redis cache fails open during connection failures.
+
 | Method | Path under `/api/v1` | Purpose |
 |---|---|---|
 | POST | auth/signup | `{user:{name,email,password}}`; 12–72 character password |

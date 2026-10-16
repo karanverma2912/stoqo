@@ -31,7 +31,7 @@ import { useRealtime } from "../lib/realtime";
 import { Loading, ErrorBox, Screen, Button, Heading } from "../components/ui";
 import { ServerConnection } from "../components/server-connection";
 import { ensureServerReady } from "../lib/server-health";
-import { apiOrigin } from "../lib/api";
+import { ApiError, apiOrigin } from "../lib/api";
 // Hold the branded native screen through font loading. Server readiness has
 // its own in-app feedback and must never keep the native splash on screen.
 void SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -39,7 +39,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 20000,
-      retry: 1,
+      retry: (failures, error) =>
+        !(error instanceof ApiError && error.status === 429) && failures < 1,
       refetchOnReconnect: true,
       refetchOnWindowFocus: true,
     },
@@ -145,8 +146,7 @@ export default function Layout() {
     Manrope_700Bold,
     Manrope_800ExtraBold,
   });
-  if (!fontsReady && !fontError)
-    return null;
+  if (!fontsReady && !fontError) return null;
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1 }} onLayout={() => SplashScreen.hide()}>

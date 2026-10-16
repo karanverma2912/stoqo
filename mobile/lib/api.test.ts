@@ -41,6 +41,54 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Native login isolation and recovery", () => {
+  it("shows the rate-limit wait without retrying a write or ending the session", async () => {
+    const { api, ApiError, saveSession, setExpiredHandler, post } =
+      await import("./api");
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            error: { code: "rate_limited", message: "Slow down", details: {} },
+          }),
+          { status: 429, headers: { "Retry-After": "45" } },
+        ),
+    );
+    vi.stubGlobal("fetch", fetch);
+    const expired = vi.fn();
+    setExpiredHandler(expired);
+    await saveSession("current-login");
+    const failure = await api(
+      "stock_movements",
+      post({ stock_movement: { quantity: "2" } }),
+      4,
+    ).catch((error) => error);
+    expect(failure).toBeInstanceOf(ApiError);
+    expect(failure.retryAfter).toBe(45);
+    expect(failure.message).toContain("wait 45 seconds");
+    expect(failure.code).toBe("rate_limited");
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(expired).not.toHaveBeenCalled();
+  });
+
+  it("uses a body retry interval when a proxy omits the Retry-After header", async () => {
+    const { api } = await import("./api");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: { code: "rate_limited", retry_after: 25 },
+            }),
+            { status: 429 },
+          ),
+      ),
+    );
+    const failure = await api("products").catch((error) => error);
+    expect(failure.retryAfter).toBe(25);
+    expect(failure.message).toContain("wait 25 seconds");
+  });
+
   it("does not send a write for an old login after waiting for a cold server", async () => {
     const { api, saveSession, post } = await import("./api");
     const wake = deferred<void>();
@@ -130,9 +178,8 @@ describe("Native login isolation and recovery", () => {
   });
 
   it("does not overwrite a new login with a delayed saved session", async () => {
-    const { restoreSession, saveSession, sessionHeaders } = await import(
-      "./api"
-    );
+    const { restoreSession, saveSession, sessionHeaders } =
+      await import("./api");
     const diskRead = deferred<string>();
     mocks.get.mockReturnValueOnce(diskRead.promise);
     const restoring = restoreSession();

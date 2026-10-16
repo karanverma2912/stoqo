@@ -1,6 +1,9 @@
 class ApplicationController < ActionController::API
   include Pundit::Authorization
   before_action :authenticate!
+  rescue_from ActionDispatch::Http::Parameters::ParseError, ActionController::BadRequest do
+    error("invalid_request", "The request body could not be read. Please check the submitted details.", :bad_request)
+  end
   rescue_from ActiveRecord::RecordNotFound do
     error("not_found", "This item could not be found", :not_found)
   end

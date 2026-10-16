@@ -77,6 +77,7 @@ export class ApiError extends Error {
     public status: number,
     public code: string,
     public details: Record<string, string[]> = {},
+    public retryAfter?: number,
   ) {
     super(message);
   }
@@ -118,6 +119,15 @@ export async function api<T>(
       },
     }));
     if (!response.ok) {
+      const retrySeconds = Number(
+        response.headers.get("Retry-After") ?? body.error?.retry_after,
+      );
+      const retryAfter =
+        response.status === 429 &&
+        Number.isFinite(retrySeconds) &&
+        retrySeconds > 0
+          ? Math.ceil(retrySeconds)
+          : undefined;
       if (
         response.status === 401 &&
         requestVersion !== null &&
@@ -126,10 +136,13 @@ export async function api<T>(
       )
         expired?.();
       throw new ApiError(
-        body.error?.message ?? "Please try again.",
+        retryAfter
+          ? `Too many requests. Please wait ${retryAfter} seconds and try again.`
+          : (body.error?.message ?? "Please try again."),
         response.status,
         body.error?.code ?? "request_failed",
         body.error?.details,
+        retryAfter,
       );
     }
     return body;

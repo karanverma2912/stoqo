@@ -5,7 +5,8 @@ import {
   useRootNavigationState,
   useSegments,
 } from "expo-router";
-import { ActivityIndicator, AppState, View } from "react-native";
+import { AppState, View } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 import {
   useFonts,
   Manrope_400Regular,
@@ -31,6 +32,9 @@ import { Loading, ErrorBox, Screen, Button, Heading } from "../components/ui";
 import { ServerConnection } from "../components/server-connection";
 import { ensureServerReady } from "../lib/server-health";
 import { apiOrigin } from "../lib/api";
+// Hold the branded native screen through font loading. Server readiness has
+// its own in-app feedback and must never keep the native splash on screen.
+void SplashScreen.preventAutoHideAsync().catch(() => {});
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -142,29 +146,20 @@ export default function Layout() {
     Manrope_800ExtraBold,
   });
   if (!fontsReady && !fontError)
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#F5F5F0",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <ActivityIndicator color="#245A40" />
-      </View>
-    );
+    return null;
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <PreferencesProvider>
-          <AuthProvider>
-            <CartProvider>
-              <Navigation />
-            </CartProvider>
-          </AuthProvider>
-        </PreferencesProvider>
-      </QueryClientProvider>
+      <View style={{ flex: 1 }} onLayout={() => SplashScreen.hide()}>
+        <QueryClientProvider client={queryClient}>
+          <PreferencesProvider>
+            <AuthProvider>
+              <CartProvider>
+                <Navigation />
+              </CartProvider>
+            </AuthProvider>
+          </PreferencesProvider>
+        </QueryClientProvider>
+      </View>
     </SafeAreaProvider>
   );
 }

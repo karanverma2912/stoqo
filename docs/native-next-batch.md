@@ -133,3 +133,25 @@ The corrected **deployed** Worker then passed its scheduled run at
 HTTP/preview routes were also read back after the corrected deployment. This
 verifies a real Cron invocation in addition to the saved configuration and
 local checks.
+
+## Cold-launch placeholder follow-up
+
+The owner's brief grey grid/rings screenshot matched the packaged Android
+`drawable/splashscreen_logo` in the installed 0.3.1 APK. The source had no
+explicit splash-screen plugin, leaving the starter native launch asset.
+
+Added SDK-compatible `expo-splash-screen` 57.0.10 and configured a centered
+transparent Stoqo mark on cream, with a lime mark on the dark palette. The
+light/dark PNG assets are rendered from the existing logo's vector path, whose
+SVG sources are retained. The native splash stays up while fonts load and
+hides after the first app view lays out, including the font-error fallback.
+Server readiness continues in the app so a slow API never holds the native
+splash indefinitely. No artificial launch delay was added.
+
+The actual Expo manifest regression now checks the splash plugin and the
+light/dark PNG assets. All 74 native tests, typecheck, lint and release settings
+pass. Expo native-config introspection confirms the day/night background
+colors, contained logo and Android launch-theme wiring without generating an
+Android project or compiling an APK. Native startup appearance must be verified
+in the next owner-requested signed APK. No new APK or OTA update was created for
+this fix.

@@ -50,6 +50,16 @@ describe("APK release configuration", () => {
     expect(config.android.versionCode).toBe(104);
     expect(config.extra.eas.projectId).toBe(process.env.EXPO_PUBLIC_EAS_PROJECT_ID || production.eas_project_id);
     expect(config.android.intentFilters[0].data[0].host).toBe("stoqo-web.onrender.com");
+    const splash = config.plugins.find((plugin: string | [string, unknown]) => Array.isArray(plugin) && plugin[0] === "expo-splash-screen");
+    expect(splash?.[1]).toMatchObject({
+      image: "./assets/stoqo-splash.png", imageWidth: 200, resizeMode: "contain", backgroundColor: "#F5F5F0",
+      dark: { image: "./assets/stoqo-splash-dark.png", backgroundColor: "#0A1610" },
+    });
+    for (const image of [splash[1].image, splash[1].dark.image]) {
+      const png = readFileSync(new URL(`../${image.replace(/^\.\//, "")}`, import.meta.url));
+      expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+      expect([png.readUInt32BE(16), png.readUInt32BE(20), png[25]]).toEqual([1024, 1024, 6]);
+    }
     expect(stdout).not.toContain("server-only");
   });
 });

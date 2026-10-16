@@ -58,6 +58,19 @@ const config: ExpoConfig = {
   plugins: [
     "expo-router",
     "expo-font",
+    [
+      "expo-splash-screen",
+      {
+        image: "./assets/stoqo-splash.png",
+        imageWidth: 200,
+        resizeMode: "contain",
+        backgroundColor: "#F5F5F0",
+        dark: {
+          image: "./assets/stoqo-splash-dark.png",
+          backgroundColor: "#0A1610",
+        },
+      },
+    ],
     "expo-secure-store",
     [
       "expo-camera",

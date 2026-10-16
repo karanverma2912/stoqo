@@ -85,7 +85,7 @@ next build.
 A Cloudflare Worker is deployed with accepted, read-back API health schedules
 every ten minutes from 07:00 to 23:00 IST. No paid plan, Render deployment,
 native build or OTA update was started. The website is not kept awake. All 74
-native tests, typecheck, lint, release configuration checks, two Worker tests
+native tests, typecheck, lint, release configuration checks, three Worker tests
 and 16 fixture phone-layout checks pass. See
 [native-next-batch.md](native-next-batch.md) for exact scope, live data checks,
 schedule, Firebase inputs and physical-device limits.

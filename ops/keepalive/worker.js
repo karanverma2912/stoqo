@@ -8,7 +8,8 @@ export async function checkApi() {
   try {
     const response = await fetch(target, {
       signal: controller.signal,
-      redirect: "error",
+      // Workers supports manual/follow; it rejects the browser's "error" mode.
+      redirect: "manual",
       headers: { Accept: "application/json", "User-Agent": "Stoqo-Health/1.0" },
       cf: { cacheTtl: 0, cacheEverything: false },
     });

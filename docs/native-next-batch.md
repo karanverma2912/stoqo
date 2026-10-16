@@ -97,7 +97,7 @@ Reference: https://docs.expo.dev/push-notifications/fcm-credentials/
 ## Verification
 
 74 native unit/regression tests, TypeScript checks, Expo lint and release
-configuration validation pass. Two Worker tests and checking its JavaScript
+configuration validation pass. Three Worker tests and checking its JavaScript
 against current Cloudflare Workers types pass. Live demo ledger verification
 and the API readiness check pass.
 
@@ -115,3 +115,13 @@ for the next owner-requested APK.
 
 Suggested next work: cached inventory for slow connections, expiry/batch fields
 for kirana products, and an auditable reverse-stock action for mistakes.
+
+The first scheduled invocation exposed a Workers-specific fetch redirect mode
+error. The Worker was corrected to use manual redirects and redeployed at
+06:43 UTC; 3xx responses still fail instead of following another target. A
+regression test covers that behavior. API and website readiness both returned
+HTTP 200 during the final checks (about 7 and 60 seconds respectively); the
+website can still cold-start because it is outside the keepalive schedule.
+The corrected handler also passed a local workerd scheduled invocation with
+`outcome: ok` and API HTTP 200. That check used a Node outbound relay because
+the managed environment does not provide DNS to the workerd child process.

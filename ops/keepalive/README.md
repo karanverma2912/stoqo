@@ -25,3 +25,17 @@ To disable, clear the Worker's Cron Triggers. Keep deployed schedules synchroniz
 with `wrangler.jsonc`. No native APK build is needed to change this schedule.
 
 Verification: `node --test ops/keepalive/worker.test.mjs`.
+
+The fetch uses `redirect: "manual"` and rejects non-200 responses, including
+redirects. The Workers runtime rejected `redirect: "error"` during the first
+scheduled invocation, even though Node's fetch and the type definitions accept
+that mode. Validate the deployed handler's outcome as well as its unit tests.
+
+For a local Workers-runtime smoke check, run
+`npx wrangler dev --local --test-scheduled` here and request
+`http://localhost:8787/cdn-cgi/local/scheduled?format=json`. A successful handler
+returns `outcome: ok`. The runtime needs outbound access to the API.
+
+For live verification, query Workers Observability with dataset
+`cloudflare-workers`, filtered to `$metadata.service = stoqo-api-keepalive`.
+Check both the scheduled event's `outcome` and the logged readiness HTTP status.

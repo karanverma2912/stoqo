@@ -125,3 +125,11 @@ website can still cold-start because it is outside the keepalive schedule.
 The corrected handler also passed a local workerd scheduled invocation with
 `outcome: ok` and API HTTP 200. That check used a Node outbound relay because
 the managed environment does not provide DNS to the workerd child process.
+
+The corrected **deployed** Worker then passed its scheduled run at
+2026-10-16 06:50:53 UTC. Cloudflare recorded scheduled outcome `ok`, API HTTP
+200, a 403 ms health request, 399 ms wall time and 1 ms CPU time for version
+`5ecbe581-5945-4cac-91dc-06da287fcaf1`. The three daytime schedules and disabled
+HTTP/preview routes were also read back after the corrected deployment. This
+verifies a real Cron invocation in addition to the saved configuration and
+local checks.

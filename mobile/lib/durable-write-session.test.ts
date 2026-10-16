@@ -167,6 +167,35 @@ describe("persisted write isolation", () => {
     expect(send).not.toHaveBeenCalled();
   });
 
+  it("keeps one stock write exclusive while a sheet closes and the product screen reopens", async () => {
+    const f = fixture(),
+      response = deferred<string>();
+    const sheet = new DurableWriteSession("same-stock", f.storage, vi.fn());
+    await sheet.restore();
+    const sent = sheet.execute(
+      () => record(),
+      () => response.promise,
+      keepOnError,
+    );
+    const rejected = expect(sent).rejects.toThrow("changed while");
+    await Promise.resolve();
+    sheet.deactivate();
+    const detail = new DurableWriteSession("same-stock", f.storage, vi.fn());
+    await detail.restore();
+    const send = vi.fn(async () => "accepted");
+    await expect(
+      detail.execute(() => record("new"), send, keepOnError),
+    ).rejects.toThrow("already in progress");
+    expect(send).not.toHaveBeenCalled();
+    response.resolve("accepted");
+    await rejected;
+    await detail.execute(() => record("new"), send, keepOnError);
+    // Replays the original key, which the server applies exactly once.
+    expect(send).toHaveBeenCalledExactlyOnceWith(record());
+    await detail.execute(() => record("next"), send, keepOnError);
+    expect(send).toHaveBeenLastCalledWith(record("next"));
+  });
+
   it("unlocks a request only after a definitive validation rejection", async () => {
     const f = fixture(),
       invalid = new Error("not enough stock");

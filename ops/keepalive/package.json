@@ -1,0 +1,5 @@
+{
+  "name": "stoqo-api-keepalive",
+  "private": true,
+  "type": "module"
+}

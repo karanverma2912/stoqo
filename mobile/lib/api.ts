@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import type { Envelope } from "./types";
+import { ensureServerReady } from "./server-health";
 const SESSION_KEY = "stoqo.native.session";
 let session: string | null = null;
 let generation = 0;
@@ -54,11 +55,13 @@ export async function saveSession(token: string | null) {
   session = token;
   generation++;
   // Keep disk writes in login order even when an expiry and logout overlap.
-  const write = storageWrite.catch(() => {}).then(() =>
-    token
-      ? SecureStore.setItemAsync(SESSION_KEY, token)
-      : SecureStore.deleteItemAsync(SESSION_KEY),
-  );
+  const write = storageWrite
+    .catch(() => {})
+    .then(() =>
+      token
+        ? SecureStore.setItemAsync(SESSION_KEY, token)
+        : SecureStore.deleteItemAsync(SESSION_KEY),
+    );
   storageWrite = write;
   await write;
 }
@@ -85,13 +88,17 @@ export async function api<T>(
 ): Promise<Envelope<T>> {
   if (!/^[a-zA-Z0-9_/?=&%.,+-]+$/.test(path) || path.startsWith("/"))
     throw new Error("Invalid request");
+  const requestVersion = sessionVersion();
+  await ensureServerReady(apiOrigin());
+  if (requestVersion !== sessionVersion())
+    throw new Error("Your sign-in changed. Please try again.");
+  if (options.signal?.aborted) throw new Error("Request cancelled.");
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
     path === "assistant/messages" ? 75000 : 45000,
   );
   const isForm = options.body instanceof FormData;
-  const requestVersion = sessionVersion();
   try {
     const response = await fetch(`${apiOrigin()}/api/v1/${path}`, {
       ...options,
@@ -104,14 +111,12 @@ export async function api<T>(
     });
     if (response.status === 204)
       return { data: null as T, meta: {} as Envelope<T>["meta"] };
-    const body = await response
-      .json()
-      .catch(() => ({
-        error: {
-          code: "service_unavailable",
-          message: "Stoqo is temporarily unavailable. Please retry shortly.",
-        },
-      }));
+    const body = await response.json().catch(() => ({
+      error: {
+        code: "service_unavailable",
+        message: "Stoqo is temporarily unavailable. Please retry shortly.",
+      },
+    }));
     if (!response.ok) {
       if (
         response.status === 401 &&

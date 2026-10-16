@@ -1,3 +1,13 @@
+## Pending follow-up — no new APK requested
+
+Barcode capture inside the product form; quick add/remove stock from Inventory;
+useful assistant shortcuts without AI setup; icon-only selected tab highlights;
+clearer push availability; and shared startup readiness recovery are saved in
+source. Live demo stock and the external API health schedule are recorded in
+[the next-batch handoff](native-next-batch.md). The installed 0.3.1 APK does not
+contain these later app changes. Firebase configuration remains required before
+background push can be verified in the next APK.
+
 ## 0.3.1 — Android version code 4
 
 - Refresh sign-in/signup, dashboard, inventory, checkout, workspace, assistant and store setup with shared typography, icons, light/dark palettes and reduced-motion-aware native interactions.

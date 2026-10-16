@@ -91,11 +91,7 @@ export function WorkspaceTabBar({
                   width: central ? 45 : 44,
                   height: central ? 39 : 33,
                   borderRadius: central ? 15 : 12,
-                  backgroundColor: central
-                    ? colors.primary
-                    : selected
-                      ? colors.soft
-                      : "transparent",
+                  backgroundColor: central ? colors.primary : "transparent",
                   alignItems: "center",
                   justifyContent: "center",
                 }}

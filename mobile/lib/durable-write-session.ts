@@ -8,6 +8,9 @@ type Storage = {
   setItem: (key: string, value: string) => Promise<unknown>;
   removeItem: (key: string) => Promise<unknown>;
 };
+// A quick-stock sheet and product screen can briefly overlap during navigation.
+// Keep an in-flight operation exclusive until its disk cleanup has completed.
+const runningKeys = new Set<string>();
 
 // Each activation owns its state; an earlier async request cannot overwrite
 // the pending request for another product, store or account.
@@ -65,8 +68,12 @@ export class DurableWriteSession {
   ): Promise<T> {
     if (!this.active || !this.ready)
       throw new Error("Wait for saved requests to load.");
-    if (this.running) throw new Error("This request is already in progress.");
+    if (this.running || runningKeys.has(this.key))
+      throw new Error(
+        "This request is already in progress. Please wait before retrying.",
+      );
     this.running = true;
+    runningKeys.add(this.key);
     try {
       let record = this.pending;
       if (!record) {
@@ -97,6 +104,7 @@ export class DurableWriteSession {
       throw error;
     } finally {
       this.running = false;
+      runningKeys.delete(this.key);
     }
   }
 }

@@ -1,17 +1,32 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  get: vi.fn(), set: vi.fn(), remove: vi.fn(),
-  constants: { expoConfig: { extra: { apiUrl: "https://stoqo-api.onrender.com", webUrl: "https://stoqo-web.onrender.com" } } },
+  get: vi.fn(),
+  set: vi.fn(),
+  remove: vi.fn(),
+  ready: vi.fn(),
+  constants: {
+    expoConfig: {
+      extra: {
+        apiUrl: "https://stoqo-api.onrender.com",
+        webUrl: "https://stoqo-web.onrender.com",
+      },
+    },
+  },
 }));
 vi.mock("expo-secure-store", () => ({
-  getItemAsync: mocks.get, setItemAsync: mocks.set, deleteItemAsync: mocks.remove,
+  getItemAsync: mocks.get,
+  setItemAsync: mocks.set,
+  deleteItemAsync: mocks.remove,
 }));
 vi.mock("expo-constants", () => ({ default: mocks.constants }));
+vi.mock("./server-health", () => ({ ensureServerReady: mocks.ready }));
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => { resolve = done; });
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
   return { promise, resolve };
 }
 
@@ -21,16 +36,56 @@ beforeEach(() => {
   mocks.get.mockResolvedValue(null);
   mocks.set.mockResolvedValue(undefined);
   mocks.remove.mockResolvedValue(undefined);
+  mocks.ready.mockResolvedValue(undefined);
 });
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Native login isolation and recovery", () => {
+  it("does not send a write for an old login after waiting for a cold server", async () => {
+    const { api, saveSession, post } = await import("./api");
+    const wake = deferred<void>();
+    mocks.ready.mockReturnValueOnce(wake.promise);
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    await saveSession("old-login");
+    const request = api(
+      "stock_movements",
+      post({ stock_movement: { quantity: "2" } }),
+      4,
+    ).catch((e: Error) => e);
+    await saveSession("new-login");
+    wake.resolve();
+    expect(((await request) as Error).message).toContain("sign-in changed");
+    expect(fetch).not.toHaveBeenCalled();
+  });
   it("preserves password validation details from a rejected signup", async () => {
     const { api, ApiError, post } = await import("./api");
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: { code: "validation_error", message: "Please check the highlighted details", details: { password: ["is too short (minimum is 12 characters)"] } } }), { status: 422 })));
-    const failure = await api("auth/signup", post({ user: { password: "short" } })).catch((error) => error);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                code: "validation_error",
+                message: "Please check the highlighted details",
+                details: {
+                  password: ["is too short (minimum is 12 characters)"],
+                },
+              },
+            }),
+            { status: 422 },
+          ),
+      ),
+    );
+    const failure = await api(
+      "auth/signup",
+      post({ user: { password: "short" } }),
+    ).catch((error) => error);
     expect(failure).toBeInstanceOf(ApiError);
-    expect(failure.details).toEqual({ password: ["is too short (minimum is 12 characters)"] });
+    expect(failure.details).toEqual({
+      password: ["is too short (minimum is 12 characters)"],
+    });
   });
   it("reads the bundled server origins without requiring a GitHub environment", async () => {
     const { apiOrigin, webOrigin } = await import("./api");
@@ -41,20 +96,30 @@ describe("Native login isolation and recovery", () => {
   it("does not expire a new login when an earlier request returns 401", async () => {
     const { api, saveSession, setExpiredHandler } = await import("./api");
     const response = deferred<Response>();
-    vi.stubGlobal("fetch", vi.fn(() => response.promise));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => response.promise),
+    );
     const expired = vi.fn();
     setExpiredHandler(expired);
     await saveSession("first-login");
     const request = api("auth/me").catch((error: Error) => error);
     await saveSession("new-login");
-    response.resolve(new Response(JSON.stringify({ error: { message: "Expired" } }), { status: 401 }));
+    response.resolve(
+      new Response(JSON.stringify({ error: { message: "Expired" } }), {
+        status: 401,
+      }),
+    );
     expect(await request).toBeInstanceOf(Error);
     expect(expired).not.toHaveBeenCalled();
   });
 
   it("expires only authenticated requests belonging to the current login", async () => {
     const { api, saveSession, setExpiredHandler } = await import("./api");
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 401 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("{}", { status: 401 })),
+    );
     const expired = vi.fn();
     setExpiredHandler(expired);
     await expect(api("auth/forgot_password")).rejects.toBeInstanceOf(Error);
@@ -65,7 +130,9 @@ describe("Native login isolation and recovery", () => {
   });
 
   it("does not overwrite a new login with a delayed saved session", async () => {
-    const { restoreSession, saveSession, sessionHeaders } = await import("./api");
+    const { restoreSession, saveSession, sessionHeaders } = await import(
+      "./api"
+    );
     const diskRead = deferred<string>();
     mocks.get.mockReturnValueOnce(diskRead.promise);
     const restoring = restoreSession();
@@ -79,10 +146,14 @@ describe("Native login isolation and recovery", () => {
     const { saveSession, sessionHeaders } = await import("./api");
     const firstWrite = deferred<void>();
     const disk = new Map<string, string>();
-    mocks.set.mockImplementationOnce(async (key: string, value: string) => {
-      await firstWrite.promise;
-      disk.set(key, value);
-    }).mockImplementation(async (key: string, value: string) => { disk.set(key, value); });
+    mocks.set
+      .mockImplementationOnce(async (key: string, value: string) => {
+        await firstWrite.promise;
+        disk.set(key, value);
+      })
+      .mockImplementation(async (key: string, value: string) => {
+        disk.set(key, value);
+      });
     const first = saveSession("old-login");
     const second = saveSession("new-login");
     expect(sessionHeaders().Authorization).toBe("Bearer new-login");

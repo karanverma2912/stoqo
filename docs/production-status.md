@@ -71,6 +71,25 @@ Android metadata confirms `com.stoqo.app`, version 0.3.1/code 4, minimum API 24,
 
 API `/ready` and website `/api/health` both returned HTTP 200 with `status: ready` during this release. The website's cold response took about 50 seconds on the existing free service. No backend, database, provider or billing settings were changed. Gemini, email and background-push provider configuration remain separate launch work. Install and exercise the updated APK on physical phones; binary verification and the fixture UI checks above do not replace device testing.
 
+## 16 October follow-up: inventory, scanning, assistant and wake-up
+
+The owner requested another source-only batch and explicitly deferred a new
+APK. Sixteen marked demo products are live in Maheshwari kirana with matching
+opening-stock ledger entries. The native source now includes barcode capture
+inside the product form, quick stock add/remove sheets in Inventory, icon-only
+selected tab highlights, six store assistant shortcuts without AI setup,
+clearer push availability and startup readiness recovery. Background Android
+push still requires Firebase client configuration and FCM V1 credentials in the
+next build.
+
+A Cloudflare Worker is deployed with accepted, read-back API health schedules
+every ten minutes from 07:00 to 23:00 IST. No paid plan, Render deployment,
+native build or OTA update was started. The website is not kept awake. All 74
+native tests, typecheck, lint, release configuration checks, two Worker tests
+and 16 fixture phone-layout checks pass. See
+[native-next-batch.md](native-next-batch.md) for exact scope, live data checks,
+schedule, Firebase inputs and physical-device limits.
+
 ## Inputs and launch gates remaining
 
 1. Physical-device checks of the completed, signature-verified native APK, including scanning, receipt PDF sharing and foreground realtime delivery. Expo authentication, project linking, permanent EAS signing and the live servers are configured.

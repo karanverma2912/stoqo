@@ -20,14 +20,24 @@ import {
   styles,
 } from "../../components/ui";
 import { ProductRow } from "../../components/product-row";
+import { Sheet } from "../../components/sheet";
+import { StockAdjustment } from "../../components/stock-adjustment";
 import type { Product } from "../../lib/types";
 export default function Inventory() {
+  const { user, business } = useAuth();
+  return <StoreInventory key={`${user?.id}.${business?.id}`} />;
+}
+function StoreInventory() {
   const { business } = useAuth(),
     { colors } = usePreferences(),
     p = permissions(business?.role);
   const [q, setQ] = useState(""),
     [search, setSearch] = useState(""),
     [filter, setFilter] = useState("all");
+  const [adjusting, setAdjusting] = useState<{
+    product: Product;
+    type: "stock_in" | "stock_out";
+  } | null>(null);
   useEffect(() => {
     const timer = setTimeout(() => setSearch(q.trim()), 250);
     return () => clearTimeout(timer);
@@ -157,17 +167,37 @@ export default function Inventory() {
                 <ProductRow
                   product={item}
                   onPress={() => router.push(`/product/${item.id}`)}
+                  onAdjust={
+                    p.stock
+                      ? (type) => setAdjusting({ product: item, type })
+                      : undefined
+                  }
                 />
               </Motion>
             ) : (
               <ProductRow
                 product={item}
                 onPress={() => router.push(`/product/${item.id}`)}
+                onAdjust={
+                  p.stock
+                    ? (type) => setAdjusting({ product: item, type })
+                    : undefined
+                }
               />
             )
           }
         />
       )}
+      {adjusting ? (
+        <Sheet title="Update stock" onClose={() => setAdjusting(null)}>
+          <StockAdjustment
+            key={`${business?.id}.${adjusting.product.id}`}
+            product={adjusting.product}
+            initialType={adjusting.type}
+            onSaved={() => setAdjusting(null)}
+          />
+        </Sheet>
+      ) : null}
     </Screen>
   );
 }

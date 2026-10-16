@@ -49,6 +49,43 @@ const dark: Palette = {
   warning: "#EEC47D",
 };
 const extra: Record<string, string> = {
+  "Scan barcode": "बारकोड स्कैन करें",
+  "Scan product barcode": "प्रोडक्ट का बारकोड स्कैन करें",
+  "Scan the code on the pack. Your product details will stay here.":
+    "पैक पर कोड स्कैन करें। भरी हुई प्रोडक्ट जानकारी यहीं रहेगी।",
+  "Enter barcode manually": "बारकोड खुद भरें",
+  "Open phone settings": "फोन की सेटिंग खोलें",
+  "Update stock": "स्टॉक बदलें",
+  "Add stock": "स्टॉक जोड़ें",
+  "Remove stock": "स्टॉक घटाएँ",
+  Remove: "घटाएँ",
+  Damaged: "खराब",
+  "Note (optional)": "नोट (वैकल्पिक)",
+  "Confirm stock change": "स्टॉक का बदलाव पक्का करें",
+  "Retry stock change": "स्टॉक का बदलाव दोबारा भेजें",
+  "Stock updated.": "स्टॉक बदल गया।",
+  "You cannot remove more than the stock available.":
+    "उपलब्ध स्टॉक से ज्यादा नहीं घटा सकते।",
+  "Enter a quantity above zero, with up to 3 decimal places.":
+    "शून्य से ज्यादा मात्रा भरें, अधिकतम 3 दशमलव स्थान तक।",
+  "A saved stock change needs a retry. It will only be applied once.":
+    "सहेजा हुआ स्टॉक बदलाव दोबारा भेजें। यह सिर्फ एक बार लागू होगा।",
+  "Store shortcuts": "स्टोर के शॉर्टकट",
+  "Store snapshot": "स्टोर का हाल",
+  "New bill": "नया बिल",
+  "Check stock or jump straight to a task.":
+    "स्टॉक देखें या सीधे कोई काम शुरू करें।",
+  "Your store, a little easier.": "आपके स्टोर का काम, थोड़ा आसान।",
+  "AI chat is not connected yet. Store shortcuts work with your live inventory.":
+    "AI चैट अभी जुड़ा नहीं है। स्टोर के शॉर्टकट आपकी मौजूदा इन्वेंटरी के साथ काम करते हैं।",
+  "AI chat can be enabled by your store owner in Settings. Store shortcuts are ready below.":
+    "स्टोर मालिक सेटिंग में AI चैट चालू कर सकते हैं। स्टोर के शॉर्टकट नीचे तैयार हैं।",
+  "Checking your store…": "आपके स्टोर की जानकारी देख रहे हैं…",
+  "View store notifications": "स्टोर के नोटिफिकेशन देखें",
+  "Background alerts are not available in this app version. You can still view your store notifications in the app.":
+    "इस ऐप संस्करण में बैकग्राउंड अलर्ट उपलब्ध नहीं हैं। आप ऐप में स्टोर के नोटिफिकेशन देख सकते हैं।",
+  "Connecting to your store… The server may need a moment to wake up.":
+    "आपके स्टोर से जुड़ रहे हैं… सर्वर चालू होने में थोड़ा समय लग सकता है।",
   "Make it feel like you": "अपनी पसंद का रूप दें",
   System: "सिस्टम",
   Light: "हल्का",

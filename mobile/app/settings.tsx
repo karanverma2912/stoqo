@@ -6,7 +6,7 @@ import { api, patch, post, saveSession, webOrigin } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { usePreferences } from "../lib/preferences";
 import { permissions } from "../lib/permissions";
-import { registerPush, unregisterPush } from "../lib/push";
+import { pushAvailability, registerPush, unregisterPush } from "../lib/push";
 import {
   Button,
   Card,
@@ -45,6 +45,7 @@ export default function Settings() {
     }
   }
   const web = webOrigin();
+  const push = pushAvailability();
   return (
     <Screen title="Settings" back>
       <Heading title={user?.name ?? "Your account"} description={user?.email} />
@@ -81,17 +82,25 @@ export default function Settings() {
       <Card>
         <SectionTitle title="Background alerts" />
         <Label muted>
-          Receive store activity on each phone where you are signed in.
+          {push.reason ??
+            "Receive store activity on each phone where you are signed in."}
         </Label>
         <Button
           title="Enable notifications"
           busy={busy}
+          disabled={!push.available}
           onPress={() =>
             void run(async () => {
               if (!(await registerPush())) return;
               setNotice("Background alerts enabled on this phone.");
             })
           }
+        />
+        <Button
+          title="View store notifications"
+          icon="bell"
+          kind="soft"
+          onPress={() => router.push("/notifications")}
         />
         <Button
           title="Disable on this phone"

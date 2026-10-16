@@ -7,7 +7,11 @@ import {
 } from "expo-speech-recognition";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, post, money } from "../../lib/api";
+import { api, post, money, sessionVersion } from "../../lib/api";
+import {
+  readStoreShortcut,
+  type StoreShortcut,
+} from "../../lib/assistant-shortcuts";
 import { useAuth } from "../../lib/auth";
 import { usePreferences } from "../../lib/preferences";
 import {
@@ -30,6 +34,10 @@ type Message = {
   actions?: Proposal[];
 };
 export default function Assistant() {
+  const { user, business } = useAuth();
+  return <StoreAssistant key={`${user?.id}.${business?.id}`} />;
+}
+function StoreAssistant() {
   const { business } = useAuth(),
     { language, colors } = usePreferences(),
     cache = useQueryClient();
@@ -60,6 +68,23 @@ export default function Assistant() {
   });
   const available =
     !!capabilities.data?.data.configured && !!capabilities.data?.data.enabled;
+  async function shortcut(kind: StoreShortcut) {
+    if (busy || !business) return;
+    const id = business.id,
+      version = sessionVersion();
+    const current = () => mounted.current && sessionVersion() === version;
+    setBusy(true);
+    setError("");
+    try {
+      const text = await readStoreShortcut(kind, id, language);
+      if (current())
+        setMessages((messages) => [...messages, { role: "assistant", text }]);
+    } catch (e) {
+      if (current()) setError((e as Error).message);
+    } finally {
+      if (current()) setBusy(false);
+    }
+  }
   useEffect(
     () => () => {
       ExpoSpeechRecognitionModule.abort();
@@ -103,6 +128,8 @@ export default function Assistant() {
   }
   async function send(text = input) {
     if (!available || !text.trim() || busy) return;
+    const version = sessionVersion();
+    const current = () => mounted.current && sessionVersion() === version;
     setBusy(true);
     setError("");
     setInput("");
@@ -113,6 +140,7 @@ export default function Assistant() {
         post({ message: text.trim(), language }),
         business?.id,
       );
+      if (!current()) return;
       setMessages((current) => [
         ...current,
         {
@@ -122,13 +150,16 @@ export default function Assistant() {
         },
       ]);
     } catch (e) {
+      if (!current()) return;
       setError((e as Error).message);
       setInput(text);
     } finally {
-      setBusy(false);
+      if (current()) setBusy(false);
     }
   }
   async function task(action: Proposal) {
+    const version = sessionVersion();
+    const current = () => mounted.current && sessionVersion() === version;
     setActionBusy(action.id);
     setError("");
     try {
@@ -137,17 +168,18 @@ export default function Assistant() {
         post({}),
         business?.id,
       );
+      if (!current()) return;
       setConfirmed((current) => ({
         ...current,
         [action.id]: result.data.message,
       }));
       await cache.invalidateQueries({ queryKey: ["store", business?.id] });
-      if (mounted.current && result.data.sale_id)
+      if (current() && result.data.sale_id)
         router.push(`/sales/${result.data.sale_id}`);
     } catch (e) {
-      setError((e as Error).message);
+      if (current()) setError((e as Error).message);
     } finally {
-      setActionBusy(null);
+      if (current()) setActionBusy(null);
     }
   }
   return (
@@ -203,41 +235,27 @@ export default function Assistant() {
               style={{
                 backgroundColor: colors.hero,
                 borderColor: colors.hero,
-                padding: 25,
-                gap: 16,
+                padding: 20,
+                gap: 13,
               }}
             >
-              <View
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 19,
-                  backgroundColor: "#FFFFFF12",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Icon name="sparkle" color={colors.accent} size={29} />
-              </View>
               <Label
                 color={colors.heroInk}
                 weight="extra"
-                size={25}
+                size={22}
                 style={{ letterSpacing: -0.8 }}
               >
-                {"A helping hand,\nwhen you need one."}
+                Your store, a little easier.
               </Label>
-              <Label color={colors.heroInk} size={13} style={{ opacity: 0.8 }}>
-                {capabilities.data.data.enabled
-                  ? "The assistant is not connected yet."
-                  : "Your store owner can enable the AI assistant in Settings."}
-              </Label>
-              <Label color={colors.heroInk} size={12} style={{ opacity: 0.65 }}>
-                Inventory, sales and team access remain available.
+              <Label color={colors.heroInk} size={12} style={{ opacity: 0.85 }}>
+                {capabilities.data.data.configured
+                  ? "AI chat can be enabled by your store owner in Settings. Store shortcuts are ready below."
+                  : "AI chat is not connected yet. Store shortcuts work with your live inventory."}
               </Label>
               <Button
                 title="How Stoqo works"
                 kind="accent"
+                compact
                 trailingIcon="arrow"
                 onPress={() =>
                   setMessages((current) => [
@@ -254,6 +272,73 @@ export default function Assistant() {
             </Card>
           </Motion>
         ) : null}
+        <Card>
+          <Label weight="extra" size={17}>
+            Store shortcuts
+          </Label>
+          <Label muted size={12}>
+            Check stock or jump straight to a task.
+          </Label>
+          <View style={{ gap: 9 }}>
+            <View style={{ flexDirection: "row", gap: 9 }}>
+              <Button
+                title="Store snapshot"
+                icon="chart"
+                compact
+                kind="soft"
+                disabled={busy}
+                style={{ flex: 1 }}
+                onPress={() => void shortcut("summary")}
+              />
+              <Button
+                title="Low stock"
+                icon="warning"
+                compact
+                kind="soft"
+                disabled={busy}
+                style={{ flex: 1 }}
+                onPress={() => void shortcut("low")}
+              />
+            </View>
+            <View style={{ flexDirection: "row", gap: 9 }}>
+              <Button
+                title="Out of stock"
+                icon="box"
+                compact
+                kind="soft"
+                disabled={busy}
+                style={{ flex: 1 }}
+                onPress={() => void shortcut("out")}
+              />
+              <Button
+                title="New bill"
+                icon="bag"
+                compact
+                kind="soft"
+                style={{ flex: 1 }}
+                onPress={() => router.push("/(tabs)/sell")}
+              />
+            </View>
+            <View style={{ flexDirection: "row", gap: 9 }}>
+              <Button
+                title="Scan product"
+                icon="scan"
+                compact
+                kind="soft"
+                style={{ flex: 1 }}
+                onPress={() => router.push("/scan?mode=inventory")}
+              />
+              <Button
+                title="Update stock"
+                icon="plus"
+                compact
+                kind="soft"
+                style={{ flex: 1 }}
+                onPress={() => router.push("/(tabs)/inventory")}
+              />
+            </View>
+          </View>
+        </Card>
         {messages.length === 0 && available ? (
           <Motion style={{ gap: 20, paddingTop: 27 }}>
             <View style={{ gap: 6 }}>
@@ -438,7 +523,7 @@ export default function Assistant() {
           >
             <ActivityIndicator size="small" color={colors.primary} />
             <Label muted size={12}>
-              Stoqo is thinking…
+              {available ? "Stoqo is thinking…" : "Checking your store…"}
             </Label>
           </View>
         ) : null}

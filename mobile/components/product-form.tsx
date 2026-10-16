@@ -8,6 +8,7 @@ import { useAuth } from "../lib/auth";
 import { permissions } from "../lib/permissions";
 import { Button, Card, ErrorBox, Field, Label, Pill, Row } from "./ui";
 import type { Product, Supplier } from "../lib/types";
+import { BarcodeCapture } from "./barcode-capture";
 export function ProductForm({
   product,
   barcode = "",
@@ -35,6 +36,7 @@ export function ProductForm({
     ),
     [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null),
     [error, setError] = useState(""),
+    [scanning, setScanning] = useState(false),
     [busy, setBusy] = useState(false);
   const write = useDurableWrite(`product.${product?.id ?? "new"}`);
   const locked = busy || !!write.pending;
@@ -132,6 +134,22 @@ export function ProductForm({
         autoCapitalize="none"
         maxLength={100}
       />
+      <Button
+        title="Scan barcode"
+        icon="scan"
+        kind="soft"
+        disabled={locked}
+        onPress={() => setScanning(true)}
+      />
+      {scanning && !locked ? (
+        <BarcodeCapture
+          onClose={() => setScanning(false)}
+          onCaptured={(value) => {
+            setCode(value);
+            setScanning(false);
+          }}
+        />
+      ) : null}
       <Field
         editable={!locked}
         label="SKU"

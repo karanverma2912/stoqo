@@ -28,6 +28,9 @@ import { CartProvider } from "../lib/cart";
 import { useNotifications } from "../lib/notifications";
 import { useRealtime } from "../lib/realtime";
 import { Loading, ErrorBox, Screen, Button, Heading } from "../components/ui";
+import { ServerConnection } from "../components/server-connection";
+import { ensureServerReady } from "../lib/server-health";
+import { apiOrigin } from "../lib/api";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -60,9 +63,14 @@ function Navigation() {
   );
   useRealtime();
   useEffect(() => {
-    const listener = AppState.addEventListener("change", (value) =>
-      focusManager.setFocused(value === "active"),
-    );
+    const warm = () => {
+      void ensureServerReady(apiOrigin()).catch(() => {});
+    };
+    warm();
+    const listener = AppState.addEventListener("change", (value) => {
+      if (value === "active") warm();
+      focusManager.setFocused(value === "active");
+    });
     return () => listener.remove();
   }, []);
   const signedIn = !!user;
@@ -81,6 +89,7 @@ function Navigation() {
   if (!ready)
     return (
       <Screen>
+        <ServerConnection />
         <Loading />
       </Screen>
     );
@@ -113,6 +122,7 @@ function Navigation() {
   return (
     <>
       <StatusBar style={colors.bg === "#0A1610" ? "light" : "dark"} />
+      <ServerConnection safeArea />
       <Stack
         screenOptions={{
           headerShown: false,

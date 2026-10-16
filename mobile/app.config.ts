@@ -92,6 +92,7 @@ const config: ExpoConfig = {
     apiUrl,
     webUrl: web,
     fontLicenses,
+    androidPushConfigured: !!process.env.GOOGLE_SERVICES_JSON,
     ...(projectId ? { eas: { projectId } } : {}),
   },
   updates: { enabled: false },
